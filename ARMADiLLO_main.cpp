@@ -1666,7 +1666,7 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
 	    {
 	      int cdr_start=j;
 	      int k=j;
-	      while ((cdr_row.cols[k].hclass=="CDR")&&(k<cdr_row.cols.size()))
+	      while ((k<cdr_row.cols.size())&&(cdr_row.cols[k].hclass=="CDR"))
 		{
 		  k++;
 		}
