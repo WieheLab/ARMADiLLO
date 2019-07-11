@@ -24,6 +24,7 @@ void load_EDNAFULL_matrix(map<char, map<char,int> > &);
 double Max(double, double, int &);
 double Max(double, double, double, int &);
 bool dna_sequence_has_stop_codon_in_reading_frame(string);
+bool dna_sequence_has_stop_codon_in_reading_frame(string,int,char);
 void expected_number_of_errors_from_fastq(vector< vector<int> > &, vector<double> & );
 void parse_recombination_summaries_file(string, map<string, map<string, string> > &);
 void sequence_identity(string, string, double &, double &);

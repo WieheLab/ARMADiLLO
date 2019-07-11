@@ -189,6 +189,25 @@ bool dna_sequence_has_stop_codon_in_reading_frame(string sequence)
   return false;
 }
 
+bool dna_sequence_has_stop_codon_in_reading_frame(string sequence,int position,char newBase)
+{
+
+  if (newBase == 'C')
+    {
+      return false;
+    }
+  
+  int codonStart=position/3;
+  string codon=sequence.substr(3*codonStart,3);
+  if (codon=="TAG" || codon=="TAA" || codon=="TGA")
+    {
+      return true;
+    }
+  return false;
+  
+}
+
+
 
 void read_fasta_file(string filename, map<string, string> &sequence_hash, vector<string> &sequence_names)
 {

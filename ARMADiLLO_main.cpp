@@ -858,9 +858,10 @@ void simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_m
       string sequence_copy=sequence;
       sequence[mutate_position_i]=base_to_mutate_to;
 
-      ///store 
-      if (dna_sequence_has_stop_codon_in_reading_frame(sequence))
-	{sequence=sequence_copy; j--; stop_codon_count++;}///discard if hits a stop codon and start from prev sequence
+      ///store
+      if (dna_sequence_has_stop_codon_in_reading_frame(sequence,mutate_position_i,base_to_mutate_to))
+	//if (dna_sequence_has_stop_codon_in_reading_frame(sequence))
+	{ sequence=sequence_copy; j--; stop_codon_count++;}///discard if hits a stop codon and start from prev sequence
       else
 	{
 	  mutant_sequences.push_back(sequence);
