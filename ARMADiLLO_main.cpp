@@ -72,6 +72,7 @@ void process_SMUA_sequence_to_seq_vector(string &, string &, vector<Seq> &, map<
 void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &);
 void number_of_mutations_two_seqs(string &, string &, int &);
 void simulate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
+void simulate_S5F_lineage(string , int, int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
 vector<pair<char,double> > sort_map_into_pair_vctr(map<char,double> &);
 bool mycompare(pair<char,double> A, pair<char,double> B){return A.second > B.second;}
 void correct_for_fivemer_with_gap(int, string, string &);
@@ -110,6 +111,8 @@ int main(int argc, char *argv[])
   int SMUA_start=0, SMUA_end=-1;
   double low_prob_cutoff=.02;
   bool ignore_CDR3=false, clean_SMUA_first=false, user_provided_random_seed=false, remutate=false, output_seqs=false, ignore_warnings=false;
+  bool lineage=false;
+  int branches=1;
    while(i<argc)
      {
        string arg=argv[i];
@@ -136,6 +139,11 @@ int main(int argc, char *argv[])
        if (arg == "-max_iter")
 	 {
 	   max_iter=atoi(next_arg.c_str());
+	 }
+       if (arg == "-lineage" or arg == "-l")
+	 {
+	   lineage=true;
+	   branches=atoi(next_arg.c_str());
 	 }
        if (arg == "-mut_count")
 	 {
@@ -329,7 +337,6 @@ int main(int argc, char *argv[])
 
        vector<Seq> seq_vector, UCA_seq_vector, aa_seq_vector, aa_UCA_seq_vector;
        process_SMUA_sequence_to_seq_vector(sequence, markup_string, seq_vector, dna_to_aa_map, S5F_5mers);
-       
        process_SMUA_sequence_to_seq_vector(UCA_sequence, markup_string, UCA_seq_vector, dna_to_aa_map, S5F_5mers);
        
        //calc number of dna mutations
@@ -351,7 +358,6 @@ int main(int argc, char *argv[])
        
        //       cerr << "CDRs:\n" << aa_sequence << "\n" << cdr_markup_string << "\n"; 
        
-
        if (ignore_CDR3)
 	 {
 	   mut_count-=CDR3_mut_count;
@@ -382,19 +388,42 @@ int main(int argc, char *argv[])
        //simulate maturation at mutation frequency = to observed
        cerr << "Simulating maturation...\n"; 
        //       vector<string> mature_mutant_sequences(max_iter);
-       string mature_mutant_sequences[max_iter];
-       stop_codon_count=0;
+
+       string mature_mutant_sequences[max_iter*branches];
+       string DNA_mutant_sequences[max_iter*branches];      
        
+       stop_codon_count=0;
+
+       int array_position=0;
        for(int j=1; j<=max_iter; j++)
 	 {
 	   print_pct_progress(j, max_iter, 1);
 	   vector<string> mutant_sequences;
-	   simulate_S5F_mutation(UCA_sequence, mut_count, S5F_5mers, gen, dis,true, mutant_sequences, ignore_CDR3, shield_mutations);
+	   //vector<string> clonal_mutant_sequences;
 	   string _aa_sequence;
-	   translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], _aa_sequence, 1, dna_to_aa_map);
-	   //	   mature_mutant_sequences[j-1]=aa_sequence2;
-	   mature_mutant_sequences[j-1]=_aa_sequence;
+	   if(lineage)
+	     {
+	       simulate_S5F_lineage(UCA_sequence, branches,mut_count, S5F_5mers, gen, dis,true, mutant_sequences, ignore_CDR3, shield_mutations);
+	       for(int i=0;i<mutant_sequences.size();i++)
+		 {
+		   DNA_mutant_sequences[array_position]=mutant_sequences[i];		   
+		   translate_dna_to_aa(mutant_sequences[i], _aa_sequence, 1, dna_to_aa_map);
+		   //	   mature_mutant_sequences[j-1]=aa_sequence2;
+		   mature_mutant_sequences[array_position]=_aa_sequence;
+		   array_position++;
+		 }
+	     }
+	   else
+	     {
+	       simulate_S5F_mutation(UCA_sequence, mut_count, S5F_5mers, gen, dis,true, mutant_sequences, ignore_CDR3, shield_mutations);
+	       DNA_mutant_sequences[array_position]=mutant_sequences[mutant_sequences.size()-1];
+	       translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], _aa_sequence, 1, dna_to_aa_map);
+	       //	   mature_mutant_sequences[j-1]=aa_sequence2;
+	       mature_mutant_sequences[array_position]=_aa_sequence;
+	       array_position++;
+	     }
 	 }
+
        cerr << "STOP CODON #: " << stop_codon_count << "\n"; 
        cerr << "done\n"; 
 
@@ -404,12 +433,20 @@ int main(int argc, char *argv[])
 	   string seqs_fasta_file=sequence_name+".ARMADiLLO.simulated_seqs.fasta";
 	    ofstream file_out;
 	    file_out.open(seqs_fasta_file.c_str());
-	    for(int j=0; j<max_iter; j++)
+
+	    string seqsDNA_fasta_file=sequence_name+"DNA.ARMADiLLO.simulated_seqs.fasta";
+	    ofstream fileDNA_out;
+	    fileDNA_out.open(seqsDNA_fasta_file.c_str());
+	    for(int j=0; j<max_iter*branches; j++)
 	      {
-		file_out << ">seq_" << j+1 << "\n"; 
-		file_out << mature_mutant_sequences[j] << "\n"; 
+		file_out << ">seq_" << j+1 << "\n";
+		file_out << mature_mutant_sequences[j] << "\n";
+		
+		fileDNA_out << ">seq_" << j+1 << "\n";
+		fileDNA_out << DNA_mutant_sequences[j] << "\n"; 
 	      }
 	    file_out.close();
+	    fileDNA_out.close();
 	 }
 
        ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
@@ -423,12 +460,12 @@ int main(int argc, char *argv[])
 	     }
 	 }
 
-       for(int j=0; j<max_iter; j++)
+       for(int j=0; j<max_iter*branches; j++)
 	 {
 	   //cout << ">mutant" << i+1 << "\n" << mature_mutant_sequences[i] << "\n"; 
 	   for(int k=0; k<mature_mutant_sequences[j].length(); k++)
 	     {
-	       mature_mutant_positional_aa_freqs[k][mature_mutant_sequences[j][k]]+=(1/(double)max_iter);
+	       mature_mutant_positional_aa_freqs[k][mature_mutant_sequences[j][k]]+=(1/((double)max_iter*branches));
 	     }
 	 }
 
@@ -844,13 +881,13 @@ void simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_m
 	{
 	  if (R2<(cuml+it->second))
 	    {
-	      base_to_mutate_to=it->first;
+      base_to_mutate_to=it->first;
 	      break;
 	    }
 	  cuml+=it->second;
 	}
       if (base_to_mutate_to == 'X'){
-	cerr << "should not get an X ever, paused\n"; 
+	cerr << "should not   t an X ever, paused\n"; 
 	cerr << "A: " << substitution_probs['A'] << " C: " << substitution_probs['C'] << " G: " << substitution_probs['G'] << " T: " <<  substitution_probs['T'] << "\n"; 
 	cerr << j << "\t" << mutate_position_i << "\t" << sequence[mutate_position_i] << "\n"; 
 	int d; cin >> d; 
@@ -876,6 +913,45 @@ void simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_m
 }
 
 
+void simulate_S5F_lineage(string sequence, int number_branches, int &num_mutations, map<string,S5F_mut> &S5F_model, mt19937 &gen, uniform_real_distribution<double> &dis, bool kill_stop_seqs, vector<string> &clonal_sequences, bool is_shielded, vector<bool> &shield_mutations)
+{
+  if (num_mutations==0){clonal_sequences.push_back(sequence); return;}
+  vector<string> clonal_lineage;
+  int mutation_count;
+  int new_num_mutations;
+  string fred;
+      
+  simulate_S5F_mutation(sequence, num_mutations, S5F_model, gen, dis,kill_stop_seqs, clonal_lineage, is_shielded, shield_mutations);
+  clonal_sequences.push_back(clonal_lineage.back());
+  
+  for(int k=1;k<=number_branches-1;k++)
+    {
+      vector<int> mutation_count_vect;
+      vector<int> rand_index;
+
+      for(int i=0;i<clonal_lineage.size();i++)
+	{
+	  number_of_mutations_two_seqs(sequence,clonal_lineage[i],mutation_count);
+	  mutation_count_vect.push_back(mutation_count);
+	}
+	uniform_int_distribution<int> distribution(2,mutation_count-1);
+	int vect=distribution(gen);	  	
+	for(int i=0;i<mutation_count_vect.size();i++)
+	{
+	  if(mutation_count_vect[i]==vect)
+	    {
+	      rand_index.push_back(i);
+	    }
+	}
+      random_shuffle(rand_index.begin(),rand_index.end());
+      new_num_mutations=num_mutations-vect;
+      string new_seq=clonal_lineage[rand_index[0]];
+      number_of_mutations_two_seqs(sequence,new_seq,mutation_count);
+      simulate_S5F_mutation(new_seq, new_num_mutations, S5F_model, gen, dis,kill_stop_seqs, clonal_lineage, is_shielded, shield_mutations);
+      clonal_sequences.push_back(clonal_lineage.back());
+    }
+
+}
 
 void number_of_mutations_two_seqs(string &s1, string &s2, int &mutation_count)
 {
