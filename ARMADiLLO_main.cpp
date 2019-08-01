@@ -86,7 +86,7 @@ bool sequence_has_ambiguities(string);
 void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &, vector<double> &, int &);
 void print_output_for_tiles_view(string, vector<vector<Seq> > &, vector<string>, int, double, vector<double> &);
 void replace_UCA_sequence_in_SMUA(string, string, string, string, string &, string &, string &, bool);
-
+void helpMenu();
 ///templated functions
 template <typename Type>
 void vector2D_to_3D(vector<vector<Type> > &, int, vector<vector<vector<Type> > > &);
@@ -100,10 +100,19 @@ string convert_to_string(Type);
 //1. Use the markup string to highlight CDRs in the HTML
 //2. Make sure last cell in ladder is 1 always
 
+void helpMenu()
+{
+  cout << "ARMADiLLO <arguments>\n";
+  cout << "USAGE: analyze_mutations -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n"; exit(1);
+
+	  return;
+}
 
 int main(int argc, char *argv[])
 {  
-  if (argc <2){cout << "USAGE: analyze_mutations -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n"; exit(1);}
+  if (argc <2){
+    helpMenu();
+  }
  
   ///get cmdline args
   int i=0, line_wrap_length=60, max_iter=100, mutation_count_from_cmdline=-1, replace_J_upto=0, random_seed=0;
@@ -117,6 +126,10 @@ int main(int argc, char *argv[])
      {
        string arg=argv[i];
        string next_arg;
+       if (arg=="-h" or arg=="-help")
+	 {
+	   helpMenu();
+	 }
        if (i<argc-1){next_arg=argv[i+1];}else{next_arg="";}
        
         //  if ((arg.substr(0,1)=="-")&&(next_arg.substr(0,1)=="-")){cerr << "incorrectly formatted cmdline\n"; exit(1);}
@@ -206,6 +219,22 @@ int main(int argc, char *argv[])
        i++;
      }
 
+   if( SMUA_filename.size()<1)
+     {
+       cout << "No SMUA file given\n";
+       helpMenu();
+     }
+   if(mutability_filename.size()<1)
+     {
+       cout << "No mutability file given\n";
+       helpMenu();
+     }
+   if(substitution_filename.size()<1)
+     {
+       cout << "No substitution file given\n";
+       helpMenu();
+     }
+   
    cerr << "highlighting residues with less than " << low_prob_cutoff << " probability for mutation\n"; 
 
    ///amino acids vector
