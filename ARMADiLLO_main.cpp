@@ -103,7 +103,7 @@ string convert_to_string(Type);
 void helpMenu()
 {
   cout << "ARMADiLLO <arguments>\n";
-  cout << "USAGE: analyze_mutations -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n"; exit(1);
+  cout << "USAGE: -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n"; exit(1);
 
 	  return;
 }
