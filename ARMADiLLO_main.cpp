@@ -228,7 +228,6 @@ int main(int argc, char *argv[])
 	  treefile=next_arg.c_str();
 	  read_treefile(treefile);
 	}
-	 
        i++;
      }
 
@@ -889,12 +888,9 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
       //elapsed = double(end - begin);// / CLOCKS_PER_SEC;
       //cerr << "S5F SCORING: " << elapsed << "\n";
       //begin=clock();
-
        //check
       if(mut_scores.size() != shield_mutations.size()){cerr << "FATAL ERROR: shield mutations vector is not same size as mut_scores. Exiting\n"; exit(1);} 
-
       // cerr << j << "\tsum of mut scores: " << sum_mut_scores << "\n"; 
-      
       ///convert mutability scores to probability of mutating position  
       vector<double> mut_probability_ladder(sequence.length(),0); ///cumulative distribution of probabilities
       mut_probability_ladder[0]=mut_scores[0]/(double) sum_mut_scores;
