@@ -33,8 +33,7 @@ public:
     group=_group;
     score25=_score25;
     score75=_score75;
-  }
-  
+  } 
 };
 
 class Seq //nucleotide level sequence object (later could have each base point to a aa object)
@@ -104,9 +103,10 @@ string convert_to_string(Type);
 void helpMenu()
 {
   cout << "ARMADiLLO <arguments>\n";
-  cout << "USAGE: -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n"; exit(1);
+  cout << "USAGE: -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
+  exit(1);
 
-	  return;
+  return;
 }
 
 int main(int argc, char *argv[])
@@ -228,7 +228,6 @@ int main(int argc, char *argv[])
 	  treefile=next_arg.c_str();
 	  read_treefile(treefile);
 	}
-	 
        i++;
      }
 
@@ -299,7 +298,6 @@ int main(int argc, char *argv[])
        string new_sequence="", new_UCA_sequence="", new_markup_string="";
        int number_of_replacements=0;
        bool error_status=false;
-
 
        if (clean_SMUA_first)
 	 {
@@ -405,8 +403,7 @@ int main(int argc, char *argv[])
        number_of_mutations_two_seqs(UCA_aa_sequence, aa_sequence, aa_mut_count);
        number_of_mutations_two_seqs(UCA_aa_CDR3, seq_aa_CDR3, CDR3_aa_mut_count);
        
-       //       cerr << "CDRs:\n" << aa_sequence << "\n" << cdr_markup_string << "\n"; 
-       
+       //cerr << "CDRs:\n" << aa_sequence << "\n" << cdr_markup_string << "\n"; 
        if (ignore_CDR3)
 	 {
 	   mut_count-=CDR3_mut_count;
@@ -432,11 +429,9 @@ int main(int argc, char *argv[])
 	   if (sequence[j] == '-'){deletion_count++;}
 	 }
 
-     
        //simulate maturation at mutation frequency = to observed
        cerr << "Simulating maturation...\n"; 
        //       vector<string> mature_mutant_sequences(max_iter);
-
        string mature_mutant_sequences[max_iter*branches];
        string DNA_mutant_sequences[max_iter*branches];      
        
@@ -1398,7 +1393,6 @@ void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_
     return;
 }
 
-
 template <typename Type>
 string convert_to_string(Type t)
 {
@@ -1406,7 +1400,6 @@ string convert_to_string(Type t)
   convert << t;
   return convert.str();
 }
-
 
 
 vector<pair<char, double > > sort_map_into_pair_vctr(map<char,double> &M)
@@ -1748,8 +1741,6 @@ void cleanup_SMUA_sequences(string sequence_name, string markup_header, string U
     }
   
   return;
-  
-
 }
 
 bool sequence_has_ambiguities(string sequence)
@@ -1763,7 +1754,6 @@ bool sequence_has_ambiguities(string sequence)
 
 void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter)
 {
-
   //RULER
   HTML::Tr ruler1_row, ruler2_row;
   HTML::Td ruler1("ruler","","","","");
@@ -1849,8 +1839,7 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
 	      s<<cdr_end-cdr_start+1;
 	      cdr_row.cols[cdr_start].colspan=s.str();
 	      if (cdr_end-cdr_start>=1){
-		cdr_row.cols.erase(cdr_row.cols.begin()+cdr_start+1, cdr_row.cols.begin()+cdr_end+1);}
-	     
+		cdr_row.cols.erase(cdr_row.cols.begin()+cdr_start+1, cdr_row.cols.begin()+cdr_end+1);}     
 	    }
 	}
 
@@ -1858,7 +1847,6 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
       html_table.rows.push_back(row1);
       html_table.rows.push_back(spacer_row);
     }
-
   return;
 }
 

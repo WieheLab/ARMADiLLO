@@ -2,7 +2,8 @@
 
 ARMADiLLO code base
 
-To compile update Makefile and run make
+To compile update Makefile for correct pathing and run make. This will compile ARMADiLLO and should results in an executable called ARMADiLLO.
+
 
 
 
@@ -18,6 +19,9 @@ For example:
 ```
 ARMADiLLO -SMUA DH270_natural_pair_clone.VH.SimpleMarkedUAs.fasta -m Mutability.csv -s Substitution.csv -max_iter 100000 -chain heavy -species human -random _seed 12345
 ```
+
+The generated HTML files can be viewed in any browser; however, it will require the css files sequence_color.css and AMA.css for proper formatting. It is also advisable to move unusual.png as well for labeling the mutations.
+
 
 ## Arguments
 *Arguments*
