@@ -71,6 +71,7 @@ void process_SMUA_sequence_to_seq_vector(string &, string &, vector<Seq> &, map<
 void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &);
 void number_of_mutations_two_seqs(string &, string &, int &);
 int simulate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
+vector<double> estimate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
 void simulate_S5F_lineage(string , int, int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
 vector<pair<char,double> > sort_map_into_pair_vctr(map<char,double> &);
 bool mycompare(pair<char,double> A, pair<char,double> B){return A.second > B.second;}
@@ -103,7 +104,7 @@ string convert_to_string(Type);
 void helpMenu()
 {
   cout << "ARMADiLLO <arguments>\n";
-  cout << "USAGE: -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
+  cout << "USAGE: -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
   exit(1);
 
   return;
@@ -124,6 +125,7 @@ int main(int argc, char *argv[])
   double low_prob_cutoff=.02;
   bool ignore_CDR3=false, clean_SMUA_first=false, user_provided_random_seed=false, remutate=false, output_seqs=false, ignore_warnings=false;
   bool lineage=false;
+  bool estimate=false;
   int branches=1;
    while(i<argc)
      {
@@ -164,6 +166,10 @@ int main(int argc, char *argv[])
 	 {
 	   lineage=true;
 	   branches=atoi(next_arg.c_str());
+	 }
+       if (arg == "-estimate" or arg == "-e")
+	 {
+	   estimate=true;
 	 }
        if (arg == "-mut_count")
 	 {
@@ -430,7 +436,10 @@ int main(int argc, char *argv[])
 	 }
 
        //simulate maturation at mutation frequency = to observed
-       cerr << "Simulating maturation...\n"; 
+       if(estimate)
+	 cerr << "Estimating maturation...\n";
+       else
+	 cerr << "Simulating maturation...\n"; 
        //       vector<string> mature_mutant_sequences(max_iter);
        string mature_mutant_sequences[max_iter*branches];
        string DNA_mutant_sequences[max_iter*branches];      
