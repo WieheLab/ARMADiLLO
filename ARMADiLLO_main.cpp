@@ -550,6 +550,7 @@ int main(int argc, char *argv[])
        
        ///tabulate 
        int p02_count=0, p01_count=0, p001_count=0, p0001_count=0;
+       float PPvalue=0;
        map<string, int> region_counts;
        cerr << seq_vector.size() << "\t" << UCA_seq_vector.size() << "\n"; 
        for(int j=0; j<seq_vector.size(); j+=3)
@@ -569,17 +570,21 @@ int main(int argc, char *argv[])
 	   if (seq_vector[j].simulated_aa_positional_frequency<.01){p01_count++;}
 	   if (seq_vector[j].simulated_aa_positional_frequency<.001){p001_count++;}
 	   if (seq_vector[j].simulated_aa_positional_frequency<.0001){p0001_count++;}
+	   if (seq_vector[j].simulated_aa_positional_frequency>0)
+	     {
+	       PPvalue+=log(seq_vector[j].simulated_aa_positional_frequency);
+	     }
 	 }
 
        if (mut_count==0) 
 	 { 
 	   cerr << "0 mutations found\n";   
-	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length << "\n"; 
+	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<<PPvalue<< "\n"; 
 	  
 	 }
        else
 	 {
-	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << p02_count << "\t" << p01_count << "\t" << p001_count << "\t" << p0001_count << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<  "\n"; 
+	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << p02_count << "\t" << p01_count << "\t" << p001_count << "\t" << p0001_count << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<< PPvalue <<"\n"; 
 	   ///print detailed ARMADiLLO output as HTML
 	   vector<vector<Seq> > all_sequences;
 	   all_sequences.push_back(UCA_seq_vector);
