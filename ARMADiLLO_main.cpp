@@ -575,16 +575,16 @@ int main(int argc, char *argv[])
 	       PPvalue+=log(seq_vector[j].simulated_aa_positional_frequency);
 	     }
 	 }
-
+       int AAseqLen= UCA_seq_vector.size()/3;
        if (mut_count==0) 
 	 { 
 	   cerr << "0 mutations found\n";   
-	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<<PPvalue/CDR3_length << "\n"; 
+	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<<PPvalue/AAseqLen << "\n"; 
 	  
 	 }
        else
 	 {
-	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << p02_count << "\t" << p01_count << "\t" << p001_count << "\t" << p0001_count << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<< PPvalue/CDR3_length <<"\n"; 
+	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << p02_count << "\t" << p01_count << "\t" << p001_count << "\t" << p0001_count << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<< PPvalue/AAseqLen <<"\n"; 
 	   ///print detailed ARMADiLLO output as HTML
 	   vector<vector<Seq> > all_sequences;
 	   all_sequences.push_back(UCA_seq_vector);
