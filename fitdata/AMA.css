@@ -1,0 +1,539 @@
+* {
+   margin: 0;
+   padding: 0;
+}
+
+body {
+   font-family: Arial, Verdana, Helvetica, sans-serif;
+   font-size: 14px;
+   color: #274c7b;
+}
+
+#help
+{
+   padding: 10px;
+}
+
+p, h1, h2, ul, ol, li {
+   padding: 0 0 0.3em 0; 
+}
+ul, ol {
+   padding: 0.5em 0 0.5em 0; 
+}
+h3, h4 { 
+   padding: 1em 0 0.5em 0; 
+}
+h3.initial { 
+   padding: 0 0 0.5em 0; 
+}
+
+img {
+   border: none;
+}
+img.help {
+  height:14px; 
+  vertical-align:middle; 
+  margin: 0 0 0.15em 0.7em;
+}
+
+table {
+  border-collapse: collapse;
+  border:none;
+}
+
+p.note {
+   font-size: 90%;
+}
+
+select {
+   font-size: 90%;
+}
+
+td, th, input, select, textarea, img {
+   vertical-align:middle; 
+}
+
+span.help {
+   padding-left:1em;
+}
+
+input[type="radio"] {
+   margin-bottom:0.1em; 
+}
+input[type="checkbox"] {
+   margin-bottom:0.1em;
+}
+input[type="text"] {
+   width: 8em;
+}
+input[type="button"] {
+}
+input[type="submit"] {
+}
+input[type="reset"] {
+}
+
+select {
+   padding: 0 0.3em 0 0.1em;
+}
+
+optgroup {
+   font-style:normal;
+   font-weight:normal;
+}
+
+div.footnote {
+   font-size:90%;
+}
+
+a {
+   text-decoration:none;
+}
+
+/* Open up lists a bit */
+li {
+   padding: 0 0 0.3em 0;
+}
+ul, ol {
+   margin: 0 0 0 3em; 
+}
+
+td.highlightaafreqrow {
+   background-color: #ff8888;
+}
+td.highlightlengthfreqrow {
+   background-color: #ff8888;
+}
+td.highlightcanonicalbestmatchrow {
+   background-color: #aaffaa;
+}
+td.highlighthotspot {
+    background-color: #ff4d4d;
+}
+td.highlightcoldspot {
+    background-color: #668cff;
+}
+td.highlightaamutation {
+    background-color: #ffff00;
+}
+td.highlightaalowprob {
+    background-color: #d24dff;
+}
+td.seq_name
+{
+    background-color: #d2d2df;
+}
+td.ns_mutation_coldspot
+{
+    background-color: #d2d2df;
+}
+td.highlightinsertion {
+   background-color: #ffff66;
+}
+div.highlightcanonicalmismatch {
+   background-color: #ff8888;
+}
+div.highlightcanonicalmatch {
+   background-color: #ffff66;
+}
+
+/* Layout */
+
+div.vskip {
+   height: 0.5em;
+}
+div.hskip {
+   width: 0.5em;
+}
+div.biggerhskip {
+   width: 1.5em;
+}
+a.tabs {
+   text-decoration: none;
+   color: #274c7b;
+} 
+a.tabs-disabled {
+   text-decoration: none;
+   color: #92aec7;
+}
+a.tabs:hover {
+}
+table.frame {
+}
+table.frame td {
+   vertical-align:top;
+   border: none;
+}
+
+/* Tabs */
+
+table.tabpanel {
+}
+table.tabpanel td {
+   padding: 0.5em;
+   padding-left: 1em;
+   padding-right: 1em;
+   white-space: nowrap;
+   font-weight: bold;
+   color: #000080;
+   border: none;
+   border-bottom: 1px solid #000080;
+   box-shadow: 0 -0.8em 1em -1em #000080 inset;
+   -moz-box-shadow: 0 -0.8em 1em -1em #000080 inset;
+}
+table.tabpanel td:hover {
+   text-decoration:underline;
+}
+table.tabpanel td.focused {
+   border: 1px solid #000080;
+   border-bottom: 1px solid white;
+   box-shadow: none;
+   -moz-box-shadow: none;
+}
+table.tabpanel td.fill {
+   width: 100%;
+}
+table.tabpanel td.space {
+   width: 2em;
+}
+
+/* Table style 1 */
+
+table.input {
+   margin-bottom: 0.5em;
+}
+table.input th {
+   vertical-align:middle;
+   padding: 0.1em 0.15em 0.1em 0.15em;
+   font-weight: normal;
+   border-bottom: 1px solid grey;
+   text-align:center;
+   white-space:nowrap;
+}	
+table.input th.left-title {
+   vertical-align:middle;
+   padding-left:0;
+   text-align:left;
+}
+table.input td {
+   vertical-align:middle;
+   padding: 0.1em 0.15em 0.1em 0.15em;
+   white-space:nowrap;
+   text-align:center;
+}	
+table.input td.left {
+   vertical-align:middle;
+   text-align:left;
+}	
+table.input td.left-title {
+   vertical-align:middle;
+   text-align:left;
+   padding-right: 0.5em;
+}	
+table.input td.title {
+   vertical-align:middle;
+   text-align:left;
+   padding-right: 0.5em;
+}	
+table.input td.right-title {
+   vertical-align:middle;
+   padding-left: 0.5em;
+   text-align:left;
+}	
+
+/* Table style 2 (results tables) */
+
+table.results {
+   font-size: 14px;
+   margin-bottom: 0.5em;
+}
+table.results th {
+   vertical-align:middle;
+   padding: 0.1em 0.15em 0.1em 0.15em;
+   text-align: center;
+   font-weight: normal;
+   border: 1px solid #000080;
+   background-color: #c7d4e0;
+}
+table.results td {
+   vertical-align:middle;
+   padding: 0.1em 0.15em 0.1em 0.15em;
+   text-align: center;
+   font-weight: bold;
+   border: 1px solid #000080;
+}
+
+table.results td.left {
+   text-align:left;
+}
+table.results td.right {
+   text-align:right;
+}
+table.results th.left {
+   text-align:left;
+}
+table.results th.right {
+   text-align:right;
+}
+table.results td.absent {
+   border: none;
+   margin: 1px;
+}
+table.results td.fsb {
+   border-left:  1px solid #eeeeee;
+   border-right: 1px solid #eeeeee;
+}
+table.results td.region {
+    font-size: 9px;
+    line-height: 9px;
+    padding: 0;
+    border: 1px solid white;
+    white-space:nowrap;
+}
+table.results td.region-break {
+    background-color: #ffffff;
+    border: none;
+    padding: 0;
+    height:0.2em;
+}
+table.results table {
+    font-size: 11px;
+    margin-bottom: 0.5em;
+}
+
+
+/* Other colouring */
+
+span.illegal {
+    color: red;
+    font-weight: bold;
+}
+div.loop {
+    background-color: #ff8888;
+    padding: 0 0.5em 0 0.5em;
+    height: 9px;
+    min-width: 1em;
+    vertical-align:middle;
+}
+div.framework {
+    background-color: #aaffaa;
+    padding: 0 0.5em 0 0.5em;
+    height: 9px;
+    min-width: 1em;
+    vertical-align:middle;
+}
+div.noregion {
+    background-color: #8888ff;
+    padding: 0 0.5em 0 0.5em;
+    height: 9px;
+    min-width: 1em;
+    vertical-align:middle;
+}
+div.insert {
+    background-color: #ffffff;
+    padding: 0 0.5em 0 0.5em;
+    height: 9px;
+    min-width: 1em;
+    vertical-align:middle;
+}
+div.offsetcontent {
+   margin-left: 2.5em;
+   margin-top: 0.5em;
+   margin-bottom: 1em;
+}
+div.collapsible {
+   margin-left: 2.5em;
+   margin-top: 0.5em;
+   margin-bottom: 1em;
+   display:none;
+}
+
+/* Data display styles */
+
+div.feint {
+   opacity:0.3;
+}
+div.truncated_name {
+   max-width: 20em; 
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+}
+div.accession {
+   white-space: nowrap;
+}
+div.antigen {
+   text-align:left;
+   max-width: 40em;
+   min-width: 15em;
+}
+div.references {
+   text-align:left;
+   padding-left: 1.5em; 
+   text-indent: -1.5em;
+   max-width: 40em;
+   min-width: 15em;
+}
+div.warnings {
+   text-align:left;
+   max-width: 40em;
+   min-width: 15em;
+}
+div.name {
+   text-align:left;
+   max-width: 40em;
+   min-width: 15em;
+}
+div.sequence {
+   font-family: courier; 
+   font-size: 11px;
+   text-align: left;
+   padding: 0.5em;
+}
+div.typewriter {
+   font-family: courier; 
+   font-size: 11px;
+   text-align: left;
+   padding: 0.5em;
+}
+div.tt {
+   font-family: courier; 
+   font-size: 11px;
+   text-align: center;
+}
+div.sm {
+    font-size: 9px;
+   text-align: center;
+}
+div.atom-data {
+   font-family: courier; 
+   text-align: left;
+   text-align: left;
+   padding: 0.5em;
+   white-space: pre-wrap;
+}
+div.organism_name {
+   font-style: italic;
+}
+div.canonicals {
+   white-space: normal; 
+   text-align: left; 
+   padding-left: 1.5em;
+   text-indent:-1.5em;
+   max-width: 40em;
+   min-width: 15em;
+}
+
+/* Colors for Kabat Book display */
+
+div.A {
+    background-color: #C8C8C8;
+}
+div.R, div.K {
+    background-color: #145AFF;
+}
+div.N, div.Q {
+    background-color: #00DCDC;
+}
+div.D, div.E {
+    background-color: #E60A0A;
+}
+div.C, div.M {
+    background-color: #E6E600;
+}
+div.G {
+    background-color: #EBEBEB;
+}
+div.H {
+    background-color: #8282D2;
+}
+div.I, div.L, div.V {
+    background-color: #0F820F;
+}
+div.F, div.Y {
+    background-color: #3232AA;
+}
+div.P {
+    background-color: #DC9682;
+}
+div.S, div.T {
+    background-color: #FA9600;
+}
+div.W {
+    background-color: #B45AB4;
+}
+
+.frontpagenotes 
+{
+    display:inline-block; 
+    vertical-align:top; 
+    padding:10px; 
+    border:1px solid #274c7b; 
+    margin: 10px 0 0 10px;
+    width:35%;
+}
+
+.frontpagenotes a
+{
+   color: #274c7b;
+}
+
+.frontpagenotes a:hover
+{
+   color: #a03030;
+}
+
+li.inner {
+    list-style-type:none; 
+    font-size:90%; 
+    font-style:italic;
+}
+
+div.seq_name{
+    background-color: #d2d2df;
+}
+
+/* TOOLTIP CONTAINER*/
+.tooltip{
+    position: relative;
+    display: inline-block;
+}
+
+
+/*TOOLTIP TEXT*/
+.tooltiptext {
+    visibility: hidden;
+    width: 60px;
+    background-color: #ffffcc;
+    color: #333333;
+    font-size: 12px;
+    font-family:'Monospace';
+    text-align: center;
+    padding: 5px 0;
+    /*border-radius: 6px;*/
+ 
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -30px;
+    z-index: 1;
+}
+
+.tooltiptext::after {
+    content: " ";
+    position: absolute;
+    bottom: 100%;  /* At the top of the tooltip */
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    
+    border-color: transparent transparent black transparent;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+}
+

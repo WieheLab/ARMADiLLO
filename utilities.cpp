@@ -48,7 +48,6 @@ void translate_dna_to_aa(string &dna, string &aa, int reading_frame, map<string,
   return;
 }
 
-
 void tokenize(const string& str, std::vector<string>& tokens, const string& delimiters = " ")
 {
     // Skip delimiters at beginning.

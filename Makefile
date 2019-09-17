@@ -1,6 +1,6 @@
-#ARMADiLLO.make
+#ARMADiLLO_quick.make
 
-cxx=/usr/bin/g++ -O3 -std=c++11 -ggdb -I /usr/lib/
+cxx=/usr/bin/g++ -O3 -std=c++11 -ggdb -I /usr/lib/ -I /usr/lib64/ -I /home/jsm56/boost/ -lboost_system
 
 ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o
 	${cxx} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o
