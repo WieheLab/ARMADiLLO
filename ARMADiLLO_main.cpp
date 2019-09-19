@@ -23,6 +23,11 @@
 //#include <boost/filesystem/fstream.hpp>
 //#define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/optional.hpp>
+// include headers that implement a archive in simple text format
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/map.hpp>
 using namespace std;
 
 //classes
@@ -106,6 +111,7 @@ void vector1D_to_2D(vector<Type> &, int, vector<vector<Type> > &);
 template <typename Type>
 string convert_to_string(Type);
 map<string, map<string, string> > J_genes_list();
+bool fexists(const std::string& filename);
 
 ///OLD TODO:
 //0. The gap bases should have n/a for mutability score in HTML 
@@ -308,11 +314,27 @@ int main(int argc, char *argv[])
    const std::string direct=freq_dir;
    map<string,map<int, map<char,double> >>  v_input;
    if (quick==true) {
-     std::mutex mtx;
-     ignore_CDR3=true;
-     mtx.lock();
-     read_V(direct, v_input);
-     mtx.unlock();
+     if(fexists("Freq_Table.amo"))
+       {
+	 clock_t begin=clock();
+	 std::ifstream ifs("Freq_Table.amo",std::ios::binary);
+	 boost::archive::binary_iarchive ia(ifs);
+	 ia >> v_input;
+	 clock_t end=clock();
+	 double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	 cerr << "Reading in table took " << elapsed_secs << " to process\n";
+       }
+     else
+       {     
+	 std::mutex mtx;
+	 ignore_CDR3=true;
+	 mtx.lock();
+	 read_V(direct, v_input);
+	 mtx.unlock();
+	 ofstream ofs("Freq_Table.amo");
+	 boost::archive::binary_oarchive oa(ofs);
+	 oa << v_input;
+       }
    }
    map<string, map<string, string> > J_genes=J_genes_list();
    //iterate through the SMUA file and perform mutation analysis for each sequence
@@ -2299,4 +2321,9 @@ map<string, map<string, string> > J_genes_list()
   J_genes["rhesus"]["IGKJ4-1*01"]=K_J4_1_1_rm;
   J_genes["rhesus"]["IGKJ5-1*01"]=K_J5_1_1_rm;
   return J_genes;
+}
+
+bool fexists(const std::string& filename) {
+  std::ifstream ifile(filename.c_str());
+  return (bool)ifile;
 }
