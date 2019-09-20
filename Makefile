@@ -3,7 +3,7 @@
 cxx=/usr/bin/g++
 flags=-ggdb -O3 -std=c++11
 
-ifeq (,$(findstring $(shell uname -n),dcc-dhvi))
+ifeq ($(findstring dcc-dhvi , $(shell uname -n)),dcc)
 	links=-I/datacommons/dhvi/scripts/lib/boost/ -L /datacommons/dhvi/scripts/lib/boost/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
 	libs=/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/lib/libboost_serialization.a
 else
