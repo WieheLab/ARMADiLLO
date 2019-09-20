@@ -2,8 +2,8 @@
 
 
 ifeq (,$(findstring dcc-dhvi,$(shell uname -n)))
-	cxx=/usr/bin/g++ -ggdb -O3 -std=c++11 	
-	libs=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
+	cxx=/usr/bin/g++ -ggdb -O3 -std=c++11 -I /datacommons/dhvi/scripts/lib/boost/boost_1_70_system	-lboost_filesystem -lboost_system -lboost_serialization -pthread
+	libs=/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/lib/libboost_serialization.a
 else
 	cxx=/usr/bin/g++ -ggdb -O3 -std=c++11 -L/usr/lib/x86_64-linux-gnu/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
 	libs=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
