@@ -314,12 +314,17 @@ int main(int argc, char *argv[])
    const std::string direct=freq_dir;
    map<string,map<int, map<char,double> >>  v_input;
    if (quick==true) {
-     if(fexists("Freq_Table.amo"))
+     char sep = '/';
+     #ifdef _WIN32
+     sep = '\\';
+     #endif
+     string amoFile=direct+sep+"Freq_Table.amo";
+     if(fexists(amoFile))
        {
 	 clock_t begin=clock();
-	 std::ifstream ifs("Freq_Table.amo",std::ios::binary);
-	 boost::archive::binary_iarchive ia(ifs);
-	 ia >> v_input;
+	 std::ifstream infs(amoFile,std::ios::binary);
+	 boost::archive::binary_iarchive ina(infs);
+	 ina >> v_input;
 	 clock_t end=clock();
 	 double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	 cerr << "Reading in table took " << elapsed_secs << " to process\n";
@@ -331,9 +336,9 @@ int main(int argc, char *argv[])
 	 mtx.lock();
 	 read_V(direct, v_input);
 	 mtx.unlock();
-	 ofstream ofs("Freq_Table.amo");
-	 boost::archive::binary_oarchive oa(ofs);
-	 oa << v_input;
+	 ofstream outfs(amoFile);
+	 boost::archive::binary_oarchive outa(outfs);
+	 outa << v_input;
        }
    }
    map<string, map<string, string> > J_genes=J_genes_list();

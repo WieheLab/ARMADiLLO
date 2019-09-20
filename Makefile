@@ -6,10 +6,10 @@ libs=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
 
 
 ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o
-	${cxx} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o /usr/lib/x86_64-linux-gnu/libboost_serialization.a
+	${cxx} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o /usr/lib/x86_64-linux-gnu/libboost_serialization.a #/usr/lib/x86_64-linux-gnu/libboost_filesystem.a
 
 ARMADiLLO_main.o: ARMADiLLO_main.cpp HTML.hpp utilities.hpp
-	${cxx} -c ARMADiLLO_main.cpp /usr/lib/x86_64-linux-gnu/libboost_serialization.a
+	${cxx} -c ARMADiLLO_main.cpp #/usr/lib/x86_64-linux-gnu/libboost_serialization.a #/usr/lib/x86_64-linux-gnu/libboost_filesystem.a
 
 utilities.o: utilities.cpp utilities.hpp
 	${cxx} -c utilities.cpp
