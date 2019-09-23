@@ -6,6 +6,9 @@ flags=-ggdb -O3 -std=c++11
 ifneq (,$(findstring dhvi,$(shell uname -n)))
 	links=-I/datacommons/dhvi/scripts/lib/boost/ -L /datacommons/dhvi/scripts/lib/boost/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
 	libs=/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/lib/libboost_serialization.a
+else ifneq (,$(findstring Darwin,$(shell uname -s)))
+	links=-I/opt/local/include/boost/ -L/opt/local/include/boost -lboost_filesystem -lboost_system -lboost_serialization -pthread
+	libs=/opt/local/lib/libboost_serialization-mt.dylib
 else
 	links=-L/usr/lib/x86_64-linux-gnu/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
 	libs=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
