@@ -2,7 +2,7 @@
 
 ARMADiLLO code base
 
-To compile update Makefile for correct pathing and run make. This will compile ARMADiLLO and should results in an executable called ARMADiLLO.
+To compile update Makefile for correct pathing and run make. This will compile ARMADiLLO and should results in an executable called ARMADiLLO. Included in the package is a tar file containing the pregenerated frequency tables of mutations.
 
 
 
@@ -30,6 +30,8 @@ The generated HTML files can be viewed in any browser; however, it will require 
 
 -SMUA \[SMUA file\]
 
+-freq_dir \[dir containing freq tables\]
+
 -w \[line wrap length (60)\]
 
 -m \[S5F mutability file\]
@@ -46,6 +48,8 @@ The generated HTML files can be viewed in any browser; however, it will require 
 
 -species \[(human=default|rhesus)\]
 
+-\(n\)umber \[number of mutations\]
+
 -lineage/-l \[integer number of end branches for lineage generation\]
 
 -clean_first \[clean the SMUA prior to running\]
@@ -54,11 +58,13 @@ The generated HTML files can be viewed in any browser; however, it will require 
 
 -random_seed \[provide a random seed\]
 
+-ignore_CDR3 \[flag to turn on ignoring the CDR3\]
 
 ## Authors
 
 * Kevin Wiehe
 * Joshua Martin Beem
+* Yunfei ----
 
 
 ## Citation Paper
