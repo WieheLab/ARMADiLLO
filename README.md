@@ -64,8 +64,7 @@ The generated HTML files can be viewed in any browser; however, it will require 
 
 * Kevin Wiehe
 * Joshua Martin Beem
-* Yunfei ----
-
+* Yunfei Wang
 
 ## Citation Paper
 
