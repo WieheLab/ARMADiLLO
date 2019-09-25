@@ -146,76 +146,77 @@ int main(int argc, char *argv[])
   bool estimate=false;
   bool quick=false;
   int branches=1;
-   while(i<argc)
-     {
-       string arg=argv[i];
-       string next_arg;
-       if (arg=="-h" or arg=="-help")
-	 {
-	   helpMenu();
+  while(i<argc)
+    {
+      string arg=argv[i];
+      string next_arg;
+      if (arg=="-h" or arg=="-help")
+	{
+	  helpMenu();
+	}
+      if (i<argc-1){next_arg=argv[i+1];}else{next_arg="";}
+      
+      //  if ((arg.substr(0,1)=="-")&&(next_arg.substr(0,1)=="-")){cerr << "incorrectly formatted cmdline\n"; exit(1);}
+      if (arg == "-SMUA")
+	{
+	  SMUA_filename=next_arg;
 	 }
-       if (i<argc-1){next_arg=argv[i+1];}else{next_arg="";}
-       
-        //  if ((arg.substr(0,1)=="-")&&(next_arg.substr(0,1)=="-")){cerr << "incorrectly formatted cmdline\n"; exit(1);}
-       if (arg == "-SMUA")
-	 {
-	   SMUA_filename=next_arg;
-	 }
-       if (arg == "-m")
-	 {
-	   mutability_filename=next_arg;
-	 }
-       if (arg == "-s") 
+      if (arg == "-m")
+	{
+	  mutability_filename=next_arg;
+	}
+      if (arg == "-s") 
 	 {
 	   substitution_filename=next_arg;
 	 }
-       if (arg == "-freq_dir")
-	 {
-	   freq_dir=next_arg;
-	   quick=true;
-	 }
-       if (arg == "-w")
-	 {
-	   line_wrap_length=atoi(next_arg.c_str());
-	 }
-       if (arg == "-max_iter")
-	 {
-	   max_iter=atoi(next_arg.c_str());
-	 }
-       if (arg == "-number" or arg=="-n")
-	 {
-	   numbMutations=atoi(next_arg.c_str());
-	 }
-       if (arg == "-lineage" or arg == "-l")
-	 {
-	   lineage=true;
-	   branches=atoi(next_arg.c_str());
-	 }
-       if (arg == "-estimate" or arg == "-e")
-	 {
-	   estimate=true;
-	 }
-       if (arg == "-mut_count")
-	 {
-	   mutation_count_from_cmdline=atoi(next_arg.c_str());
-	 }
-       if (arg == "-c")
-	 {
-	   low_prob_cutoff=atof(next_arg.c_str())/100.0;
-	 }
-       if (arg == "-ignore_CDR3")
-	 {
-	   ignore_CDR3=true;
-	 }
-       if (arg == "-start")
-	 {
-	   SMUA_start=atoi(next_arg.c_str());
-	 }
-       if (arg == "-end")
-	 {
-	   SMUA_end=atoi(next_arg.c_str());
-	 }
-       if (arg == "-replace_J_upto")
+      if (arg == "-freq_dir")
+	{
+	  freq_dir=next_arg;
+	  quick=true;
+	}
+      if (arg == "-w")
+	{
+	  line_wrap_length=atoi(next_arg.c_str());
+	}
+      if (arg == "-max_iter")
+	{
+	  max_iter=atoi(next_arg.c_str());
+	}
+      if (arg == "-number" or arg=="-n")
+	{
+	  numbMutations=atoi(next_arg.c_str());
+	}
+      if (arg == "-lineage" or arg == "-l")
+	{
+	  lineage=true;
+	  branches=atoi(next_arg.c_str());
+	}
+      if (arg == "-estimate" or arg == "-e")
+	{
+	  estimate=true;
+	}
+      if (arg == "-mut_count")
+	{
+	  mutation_count_from_cmdline=atoi(next_arg.c_str());
+	  //where did this argument come from?
+	}
+      if (arg == "-c")
+	{
+	  low_prob_cutoff=atof(next_arg.c_str())/100.0;
+	}
+      if (arg == "-ignore_CDR3")
+	{
+	  ignore_CDR3=true;
+	}
+      if (arg == "-start")
+	{
+	  SMUA_start=atoi(next_arg.c_str());
+	}
+      if (arg == "-end")
+	{
+	  SMUA_end=atoi(next_arg.c_str());
+	}
+      if (arg == "-replace_J_upto")
 	{
 	  replace_J_upto=atoi(next_arg.c_str());
 	}
@@ -258,9 +259,9 @@ int main(int argc, char *argv[])
 	  treefile=next_arg.c_str();
 	  read_treefile(treefile);
 	}
-       i++;
-     }
-
+      i++;
+    }
+  
    if( SMUA_filename.size()<1)
      {
        cout << "No SMUA file given\n";
