@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
    map <string, S5F_mut> S5F_5mers;
    load_S5F_files(mutability_filename,substitution_filename, S5F_5mers);
 
-   cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\n";
+   cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\tsum(log(P))\n";
 
    const std::string direct=freq_dir;
    map<string,map<int, map<char,double> >>  v_input;
@@ -327,7 +327,6 @@ int main(int argc, char *argv[])
 	 ina >> v_input;
 	 clock_t end=clock();
 	 double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	 cerr << "Reading in table took " << elapsed_secs << " to process\n";
        }
      else
        {     
@@ -524,7 +523,7 @@ int main(int argc, char *argv[])
 	   number_of_mutations_two_seqs(UCA_other, seq_other, other_mut_count); //get mut count for other
 	   number_of_mutations_two_seqs(UCA_V, seq_V, V_mut_count);
 	   number_of_mutations_two_seqs(UCA_J, seq_J, J_mut_count);
-	   
+
 	   translate_dna_to_aa(seq_V, seq_aa_V, 1, dna_to_aa_map);
 	   translate_dna_to_aa(UCA_V, UCA_aa_V, 1, dna_to_aa_map);
 	   translate_dna_to_aa(seq_other, seq_aa_other, 1, dna_to_aa_map);
@@ -535,7 +534,7 @@ int main(int argc, char *argv[])
 	   number_of_mutations_two_seqs(UCA_aa_V, seq_aa_V, V_aa_mut_count);
 	   number_of_mutations_two_seqs(UCA_aa_other, seq_aa_other, other_aa_mut_count);
 	   number_of_mutations_two_seqs(UCA_aa_J, seq_aa_J, J_aa_mut_count);
-	   
+
 	   std::string str("IGHV");
 	   std::string str1("|");
 	   std::size_t found0=markup_header.find(str);
@@ -544,7 +543,7 @@ int main(int argc, char *argv[])
 	   
 	   string UCA_sequence_name1=markup_header.substr(found0,found2-found0);
 	   V_mut_count=round((mut_count*seq_V.length()/(sequence.length()-shield_counter)+V_mut_count*3)/4);
-	   string freq_table=UCA_sequence_name1+"_"+std::to_string(V_mut_count)+".freq_table.txt";
+	   string freq_table=UCA_sequence_name1+"_"+std::to_string(V_aa_mut_count)+".freq_table.txt";
 	   cerr<<"Sequence name"<<markup_header<<'\n';
 	   cerr << "Chosen V frequency table"<<freq_table<<"\n";
 	   
@@ -574,7 +573,6 @@ int main(int argc, char *argv[])
 		   mature_mutant_positional_aa_freqs1[j][amino_acids[k]]=positional_aa_freqs1[j-cnt][amino_acids[k]];
 		 }
 	     }
-	   
 	   for(int j=0; j<seq_CDR3.length()/3; j++) {
 	     for(int k=0; k<amino_acids.size(); k++)
 	       {
@@ -2178,54 +2176,55 @@ void read_V(const std::string & name, map<string,map<int, map<char,double> >>  &
        string dummyline;
        //if (!file.is_open()) {cerr << "could not open " << filename << " ...exiting...\n"; exit(1);}
 
-       int pos1; int pos=0; double A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y;
+       int pos1; int pos=-1; double A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y;
        while((!getline(file,dummyline).eof())){
+	 if(pos==-1){pos++;continue;}
 	 istringstream ss(dummyline);
-          getline(ss,dummyline,',')>>A;
-          getline(ss,dummyline,',')>>C;
-          getline(ss,dummyline,',')>>D;
-          getline(ss,dummyline,',')>>E;
-          getline(ss,dummyline,',')>>F;
-          getline(ss,dummyline,',')>>G;
-          getline(ss,dummyline,',')>>H;
-          getline(ss,dummyline,',')>>I;
-          getline(ss,dummyline,',')>>K;
-          getline(ss,dummyline,',')>>L;
-          getline(ss,dummyline,',')>>M;
-          getline(ss,dummyline,',')>>N;
-          getline(ss,dummyline,',')>>P;
-          getline(ss,dummyline,',')>>Q;
-          getline(ss,dummyline,',')>>R;
-          getline(ss,dummyline,',')>>S;
-          getline(ss,dummyline,',')>>T;
-          getline(ss,dummyline,',')>>V;
-          getline(ss,dummyline,',')>>W;
-          getline(ss,dummyline,',')>>Y;
+	 getline(ss,dummyline,',')>>A;
+	 getline(ss,dummyline,',')>>C;
+	 getline(ss,dummyline,',')>>D;
+	 getline(ss,dummyline,',')>>E;
+	 getline(ss,dummyline,',')>>F;
+	 getline(ss,dummyline,',')>>G;
+	 getline(ss,dummyline,',')>>H;
+	 getline(ss,dummyline,',')>>I;
+	 getline(ss,dummyline,',')>>K;
+	 getline(ss,dummyline,',')>>L;
+	 getline(ss,dummyline,',')>>M;
+	 getline(ss,dummyline,',')>>N;
+	 getline(ss,dummyline,',')>>P;
+	 getline(ss,dummyline,',')>>Q;
+	 getline(ss,dummyline,',')>>R;
+	 getline(ss,dummyline,',')>>S;
+	 getline(ss,dummyline,',')>>T;
+	 getline(ss,dummyline,',')>>V;
+	 getline(ss,dummyline,',')>>W;
+	 getline(ss,dummyline,',')>>Y;
+	 
+	 
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[0]]=A;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[1]]=C;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[2]]=D;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[3]]=E;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[4]]=F;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[5]]=G;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[6]]=H;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[7]]=I;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[8]]=K;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[9]]=L;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[10]]=M;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[11]]=N;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[12]]=P;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[13]]=Q;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[14]]=R;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[15]]=S;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[16]]=T;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[17]]=V;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[18]]=W;
+	 mature_mutant_positional_aa_freqs[pos][amino_acids[19]]=Y;
 
-
-          mature_mutant_positional_aa_freqs[pos][amino_acids[0]]=A;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[1]]=C;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[2]]=D;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[3]]=E;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[4]]=F;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[5]]=G;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[6]]=H;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[7]]=I;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[8]]=K;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[9]]=L;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[10]]=M;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[11]]=N;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[12]]=P;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[13]]=Q;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[14]]=R;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[15]]=S;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[16]]=T;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[17]]=V;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[18]]=W;
-                mature_mutant_positional_aa_freqs[pos][amino_acids[19]]=Y;
-
-		pos++;
-	  //cout <<Vgen<<"\t"<< A<<"\t"<<C<<"\t"<<D<<"\t"<<E<<"\t"<<F<<"\t"<<G<<"\t"<<H<<"\n";
+	 pos++;
+	 //cout <<Vgen<<"\t"<< Q<<"\t"<<C<<"\t"<<D<<"\t"<<E<<"\t"<<F<<"\t"<<G<<"\t"<<H<<"\n";
        }
        file.close();
        v_input[filename]=mature_mutant_positional_aa_freqs;
