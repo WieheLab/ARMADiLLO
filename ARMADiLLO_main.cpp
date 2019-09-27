@@ -318,6 +318,7 @@ int main(int argc, char *argv[])
    map<string,map<int, map<char,double> >>  v_input;
    if (quick==true)
      {
+       ignore_CDR3=true;
        char sep = '/';
 #ifdef _WIN32
        sep = '\\';
@@ -633,7 +634,6 @@ int main(int argc, char *argv[])
 		     }
 		 }
 	     }
-	   
 	   if (ignore_CDR3)
 	     {
 	       mut_count-=CDR3_mut_count;
@@ -642,7 +642,6 @@ int main(int argc, char *argv[])
 	       other_aa_mut_count-=CDR3_aa_mut_count;
 	     }
 	   other_mut_count=round((mut_count*seq_other.length()/(sequence.length()-shield_counter_other)+3*other_mut_count)/4);
-	   
 	 }
        else 
 	 {
