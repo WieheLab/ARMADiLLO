@@ -5,17 +5,20 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
-#include <fstream>
+
 #include <vector>
 #include <string>
 #include <map>
 #include <set>
+
 #include <boost/algorithm/string.hpp>
 #include "HTML.hpp"
 #include "utilities.hpp"
 #include <algorithm>
 #include <boost/filesystem/operations.hpp>
 //#include "boost/filesystem.hpp"
+#include <fstream>
+
 #include <sys/types.h>
 #include <dirent.h>
 #include <thread>
@@ -23,11 +26,6 @@
 //#include <boost/filesystem/fstream.hpp>
 //#define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/optional.hpp>
-// include headers that implement a archive in simple text format
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
@@ -49,7 +47,8 @@ public:
     group=_group;
     score25=_score25;
     score75=_score75;
-  } 
+  }
+
 };
 
 class Seq //nucleotide level sequence object (later could have each base point to a aa object)
@@ -76,9 +75,6 @@ public:
   }
 };
 
-///GLOBALS
-int stop_codon_count;
-
 ///functions
 void read_SMUA_file(string, vector<vector<string> > &);
 void load_S5F_files(string,string, map<string,S5F_mut> &);
@@ -86,9 +82,7 @@ void process_fasta_sequence_to_seq_vector(string &,vector<Seq> &, map<string,str
 void process_SMUA_sequence_to_seq_vector(string &, string &, vector<Seq> &, map<string,string> &, map<string, S5F_mut> &);
 void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &);
 void number_of_mutations_two_seqs(string &, string &, int &);
-int simulate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
-vector<double> estimate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
-void simulate_S5F_lineage(string , int, int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
+void simulate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
 vector<pair<char,double> > sort_map_into_pair_vctr(map<char,double> &);
 bool mycompare(pair<char,double> A, pair<char,double> B){return A.second > B.second;}
 void correct_for_fivemer_with_gap(int, string, string &);
@@ -101,9 +95,7 @@ void cleanup_SMUA_sequences(string, string, string , string , string , string &,
 bool sequence_has_ambiguities(string);
 void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &, vector<double> &, int &);
 void print_output_for_tiles_view(string, vector<vector<Seq> > &, vector<string>, int, double, vector<double> &);
-void replace_UCA_sequence_in_SMUA(string, string, string, string, string &, string &, string &, bool);
-void helpMenu();
-void read_treefile(string);
+void replace_UCA_sequence_in_SMUA(string, string, string, string, string &, string &, string &);
 void read_V(const std::string &, map<string,map<int, map<char,double> >> &);
 ///templated functions
 template <typename Type>
@@ -113,113 +105,78 @@ void vector1D_to_2D(vector<Type> &, int, vector<vector<Type> > &);
 template <typename Type>
 string convert_to_string(Type);
 map<string, map<string, string> > J_genes_list();
-bool fexists(const std::string& filename);
+
 
 ///OLD TODO:
-//0. The gap bases should have n/a for mutability score in HTML 
+//0. The gap bases should have n/a for mutability score in HTML
 //1. Use the markup string to highlight CDRs in the HTML
 //2. Make sure last cell in ladder is 1 always
 
-void helpMenu()
-{
-  cout << "ARMADiLLO <arguments>\n";
-  cout << "USAGE: -SMUA [SMUA file] -freq_dir [V, J Frequency file directory] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
-  exit(1);
-
-  return;
-}
 
 int main(int argc, char *argv[])
-{  
-  if (argc <2){
-    helpMenu();
-  }
- 
-  ///get cmdline args
-  int i=0, line_wrap_length=60, max_iter=1000, mutation_count_from_cmdline=-1, replace_J_upto=0, random_seed=0;
-  string fasta_filename="", mutability_filename="", substitution_filename="", SMUA_filename="", species="human", chain_type="heavy", input_UCA_sequence="";
-  string treefile="";
-  int SMUA_start=0, SMUA_end=-1;
-  int numbMutations=-1;
-  double low_prob_cutoff=.02;
-  string freq_dir="";
-  bool ignore_CDR3=false, clean_SMUA_first=false, user_provided_random_seed=false, remutate=false, output_seqs=false, ignore_warnings=false;
-  bool lineage=false;
-  bool estimate=false;
-  bool quick=false;
+{
+  if (argc <2){cout << "USAGE: analyze_mutations -freq_dir [V, J Frequency file directory] -SMUA [SMUA file] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n"; exit(1);}
 
-  int branches=1;
-  while(i<argc)
-    {
-      string arg=argv[i];
-      string next_arg;
-      if (arg=="-h" or arg=="-help")
-	{
-	  helpMenu();
-	}
-      if (i<argc-1){next_arg=argv[i+1];}else{next_arg="";}
-      
-      //  if ((arg.substr(0,1)=="-")&&(next_arg.substr(0,1)=="-")){cerr << "incorrectly formatted cmdline\n"; exit(1);}
-      if (arg == "-SMUA")
-	{
-	  SMUA_filename=next_arg;
+  ///get cmdline args
+  int i=0, line_wrap_length=60, max_iter=100, mutation_count_from_cmdline=-1, replace_J_upto=0, random_seed=0;
+  string freq_dir="", fasta_filename="", mutability_filename="", substitution_filename="", SMUA_filename="", species="human", chain_type="heavy", input_UCA_sequence="";
+  int SMUA_start=0, SMUA_end=-1;
+  double low_prob_cutoff=.02;
+  bool ignore_CDR3=false, clean_SMUA_first=false, user_provided_random_seed=false, remutate=false, output_seqs=false, quick=false;
+   while(i<argc)
+     {
+       string arg=argv[i];
+       string next_arg;
+       if (i<argc-1){next_arg=argv[i+1];}else{next_arg="";}
+
+        //  if ((arg.substr(0,1)=="-")&&(next_arg.substr(0,1)=="-")){cerr << "incorrectly formatted cmdline\n"; exit(1);}
+       if (arg == "-SMUA")
+	 {
+	   SMUA_filename=next_arg;
 	 }
-      if (arg == "-m")
-	{
-	  mutability_filename=next_arg;
-	}
-      if (arg == "-s") 
+       if (arg == "-m")
+	 {
+	   mutability_filename=next_arg;
+	 }
+       if (arg == "-s")
 	 {
 	   substitution_filename=next_arg;
 	 }
+
       if (arg == "-freq_dir")
-	{
-	  freq_dir=next_arg;
-	  quick=true;
-	}
-      if (arg == "-w")
-	{
-	  line_wrap_length=atoi(next_arg.c_str());
-	}
-      if (arg == "-max_iter")
-	{
-	  max_iter=atoi(next_arg.c_str());
-	}
-      if (arg == "-number" or arg=="-n")
-	{
-	  numbMutations=atoi(next_arg.c_str());
-	}
-      if (arg == "-lineage" or arg == "-l")
-	{
-	  lineage=true;
-	  branches=atoi(next_arg.c_str());
-	}
-      if (arg == "-estimate" or arg == "-e")
-	{
-	  estimate=true;
-	}
-      if (arg == "-mut_count")
-	{
-	  mutation_count_from_cmdline=atoi(next_arg.c_str());
-	  //where did this argument come from?
-	}
-      if (arg == "-c")
-	{
-	  low_prob_cutoff=atof(next_arg.c_str())/100.0;
-	}
-      if (arg == "-ignore_CDR3")
-	{
-	  ignore_CDR3=true;
-	}
-      if (arg == "-start")
-	{
-	  SMUA_start=atoi(next_arg.c_str());
-	}
-      if (arg == "-end")
-	{
-	  SMUA_end=atoi(next_arg.c_str());
-	}
-      if (arg == "-replace_J_upto")
+   {
+        freq_dir=next_arg;
+        quick=true;
+  }
+       if (arg == "-w")
+	 {
+	   line_wrap_length=atoi(next_arg.c_str());
+	 }
+       if (arg == "-max_iter")
+	 {
+	   max_iter=atoi(next_arg.c_str());
+	 }
+       if (arg == "-mut_count")
+	 {
+	   mutation_count_from_cmdline=atoi(next_arg.c_str());
+	 }
+       if (arg == "-c")
+	 {
+	   low_prob_cutoff=atof(next_arg.c_str())/100.0;
+	 }
+       if (arg == "-ignore_CDR3")
+	 {
+	   ignore_CDR3=true;
+	 }
+       if (arg == "-start")
+	 {
+	   SMUA_start=atoi(next_arg.c_str());
+	 }
+       if (arg == "-end")
+	 {
+	   SMUA_end=atoi(next_arg.c_str());
+	 }
+       if (arg == "-replace_J_upto")
 	{
 	  replace_J_upto=atoi(next_arg.c_str());
 	}
@@ -229,7 +186,7 @@ int main(int argc, char *argv[])
 	}
       if (arg == "-chain")
 	{
-	  chain_type=next_arg; 
+	  chain_type=next_arg;
 	}
       if (arg == "-clean_first")
 	{
@@ -253,40 +210,14 @@ int main(int argc, char *argv[])
 	{
 	  input_UCA_sequence=next_arg;
 	}
-      if (arg == "-ignore_warnings")
-	{
-	  ignore_warnings=true;
-	}
-      if(arg == "-tree" or arg == "-t")
-	{
-	  treefile=next_arg.c_str();
-	  read_treefile(treefile);
-	}
-      i++;
-    }
-  
-   if( SMUA_filename.size()<1)
-     {
-       cout << "No SMUA file given\n";
-       helpMenu();
-     }
-   if(mutability_filename.size()<1)
-     {
-       cout << "No mutability file given\n";
-       helpMenu();
-     }
-   if(substitution_filename.size()<1)
-     {
-       cout << "No substitution file given\n";
-       helpMenu();
+       i++;
      }
 
-   
-   cerr << "highlighting residues with less than " << low_prob_cutoff << " probability for mutation\n"; 
+   cerr << "highlighting residues with less than " << low_prob_cutoff << " probability for mutation\n";
 
    ///amino acids vector
    vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
-  
+
    ///setup random num generation
    std::random_device rd;
    int seed;
@@ -294,59 +225,45 @@ int main(int argc, char *argv[])
      {seed=random_seed;}
    else
      {seed=rd();}
-   
+
    std::mt19937 gen(seed);
    std::uniform_real_distribution<double> dis(0, 1);
 
    //define color ladder
    vector<double> color_ladder{0.0001, 0.001, 0.01, 0.02, 0.10, 0.20, 0.5, 1};
+
    ///load dna_to_aa map
    map<string,string> dna_to_aa_map;
    get_aa_tranx_map(dna_to_aa_map);
 
    ///read input sequence alignment
    map <string, string> sequences;
-   vector <string> sequence_names;   
+   vector <string> sequence_names;
    vector<vector<string> > SMUA_alignments_and_markup;
+
    read_SMUA_file(SMUA_filename, SMUA_alignments_and_markup);
+
    ///load S5F files
    map <string, S5F_mut> S5F_5mers;
+
    load_S5F_files(mutability_filename,substitution_filename, S5F_5mers);
 
-   cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\tsum(log(P))\n";
+
+
+   cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\n";
 
    const std::string direct=freq_dir;
    map<string,map<int, map<char,double> >>  v_input;
-   if (quick==true)
-     {
-       ignore_CDR3=true;
-       char sep = '/';
-#ifdef _WIN32
-       sep = '\\';
-#endif
-       string amoFile=direct+sep+"Freq_Table.amo";
-       if(fexists(amoFile))
-	 {
-	   clock_t begin=clock();
-	   std::ifstream infs(amoFile,std::ios::binary);
-	   boost::archive::binary_iarchive ina(infs);
-	   ina >> v_input;
-	   clock_t end=clock();
-	   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	 }
-       else
-	 {     
-	   std::mutex mtx;
-	   ignore_CDR3=true;
-	   mtx.lock();
-	   read_V(direct, v_input);
-	   mtx.unlock();
-	   ofstream outfs(amoFile);
-	   boost::archive::binary_oarchive outa(outfs);
-	   outa << v_input;
-	 }
-     }
-   map<string, map<string, string> > J_genes=J_genes_list();
+   if (quick==true) {
+     std::mutex mtx;
+     ignore_CDR3=true;
+     mtx.lock();
+     read_V(direct, v_input);
+     mtx.unlock();
+   }
+
+  map<string, map<string, string> > J_genes=J_genes_list();
+
    //iterate through the SMUA file and perform mutation analysis for each sequence
    double total_elapsed_time=0;
    if (SMUA_end==-1){SMUA_end=SMUA_alignments_and_markup.size();}
@@ -361,468 +278,464 @@ int main(int argc, char *argv[])
        string UCA_sequence=SMUA_alignments_and_markup[i][3];
        string markup_header=SMUA_alignments_and_markup[i][4];
        string markup_string=SMUA_alignments_and_markup[i][5];
-       
+
        string new_sequence="", new_UCA_sequence="", new_markup_string="";
        int number_of_replacements=0;
        bool error_status=false;
        if (clean_SMUA_first)
 	 {
-	   cerr << "Cleaning SMUA step\n"; 
+	   cerr << "Cleaning SMUA step\n";
 	   cleanup_SMUA_sequences(sequence_name, markup_header, UCA_sequence, sequence, markup_string, new_UCA_sequence, new_sequence, new_markup_string, species, chain_type, number_of_replacements, error_status);
 	   if (number_of_replacements>replace_J_upto)
 	     {
-	       cerr << "Sequence: " << sequence_name << " required " << number_of_replacements << " replacements at the end of the J where " << replace_J_upto << " is allowed (user defined). Skipping that sequence\n"; 
-	       cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
+	       cerr << "Sequence: " << sequence_name << " required " << number_of_replacements << " replacements at the end of the J where " << replace_J_upto << " is allowed (user defined). Skipping that sequence\n";
+	       cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n";
 	       continue;
 	     }
 	   if (error_status){
-	     cerr << "SMUA incorrectly formatted for sequence " << sequence_name << ". Skipping that sequence\n"; 
-	     cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
+	     cerr << "SMUA incorrectly formatted for sequence " << sequence_name << ". Skipping that sequence\n";
+	     cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n";
 	     continue;
 	   }
-	   //cerr << new_UCA_sequence << "\n" << new_sequence << "\n"; 
+
 	   UCA_sequence=new_UCA_sequence;
 	   sequence=new_sequence;
 	   markup_string=new_markup_string;
 	 }
+
        if (input_UCA_sequence!="")//replace all UCAs with input UCA
 	 {
 	   new_UCA_sequence="", new_sequence="", new_markup_string="";
-	   replace_UCA_sequence_in_SMUA(sequence, UCA_sequence, markup_string, input_UCA_sequence, new_sequence, new_UCA_sequence, new_markup_string, ignore_warnings);
-	   
-	   string new_UCA_aa_sequence="",input_UCA_aa_sequence="",UCA_aa_sequence="";
-	   translate_dna_to_aa(new_UCA_sequence, new_UCA_aa_sequence, 1, dna_to_aa_map);
-	   translate_dna_to_aa(input_UCA_sequence, input_UCA_aa_sequence, 1, dna_to_aa_map);
-	   translate_dna_to_aa(UCA_sequence, UCA_aa_sequence, 1, dna_to_aa_map);
-	   cout << "inp_UCA: " << input_UCA_aa_sequence << "\n    UCA: " << UCA_aa_sequence << "\nnew_UCA: " << new_UCA_aa_sequence << "\n"; 
-	   cout << ">inp_UCA\n" << input_UCA_sequence << "\n>UCA\n" << UCA_sequence << "\n>new_UCA\n" << new_UCA_sequence << "\n";
+	   replace_UCA_sequence_in_SMUA(sequence, UCA_sequence, markup_string, input_UCA_sequence, new_sequence, new_UCA_sequence, new_markup_string);
 	   UCA_sequence=new_UCA_sequence;
 	   sequence=new_sequence;
 	   markup_string=new_markup_string;
-	   
-	   ///output new SMUA per record
-	   ofstream file_out;
-	   string filename=sequence_name+".new_SMUA.fasta";
-	   file_out.open(filename.c_str());
-	   file_out << ">" << sequence_name << "\n" << sequence << "\n>" << UCA_sequence_name << "\n" << UCA_sequence << "\n>" << markup_header <<  "\n" << markup_string << "\n";
-	   file_out.close();
+	   //	   cout << UCA_sequence << "\n" << sequence << "\n" << markup_string << "\n";
 	 }
-       
-       string output_filename;
-       string tiles_output_filename;
-       if (numbMutations>0)
-	 {
-	   output_filename=sequence_name+".N"+to_string(numbMutations)+".ARMADiLLO.html";
-	   tiles_output_filename=sequence_name+".N"+to_string(numbMutations)+".tiles.html";
-	 }
-       else
-	 {
-	   output_filename=sequence_name+".ARMADiLLO.html";
-	   tiles_output_filename=sequence_name+".tiles.html";
-	 }
-       
+
+       string output_filename=sequence_name+".ARMADiLLO.html";
+       string tiles_output_filename=sequence_name+".tiles.html";
+
+
+
+
        vector<bool> V_gene_mark(markup_string.length(), false);
        int V_gene_counter=0, J_gene_counter=0;
        string UCA_V="", seq_V="",UCA_J="", seq_J="",markup_string_V="",UCA_other="", seq_other="", markup_string_other="";
-       
+
+
        //read in V gene;
        if (quick==true) {
-	 //read_V(direct, v_input);
-	 char * ptr;
-	 char * buf=const_cast<char *>(markup_string.c_str());
-	 int    ch = '3';
-	 ptr = strrchr( buf, ch );
-	 int leng = markup_string.length()-strlen(ptr)+1;
-	 for(int j=0; j<markup_string.length(); j++)
-	   {
-	     if (j<leng)
-	       {
-		 V_gene_mark[j]=true;
-		 V_gene_counter++;
-		 UCA_V+=UCA_sequence[j];
-		 seq_V+=sequence[j];
-		 markup_string_V+=markup_string[j];
-	       }
-	     else
-	       {
-		 V_gene_mark[j]=false;
-		 UCA_other+=UCA_sequence[j];
-		 seq_other+=sequence[j];
-		 markup_string_other+=markup_string[j];
-	       }
-	   }
-       }
-       
-       vector<bool> shield_mutations_other(markup_string_other.length(), false);
-       int shield_counter_other=0;
-       string UCA_CDR3_other="", seq_CDR3_other="";
-       for(int j=0; j<markup_string_other.length(); j++)
-	 {
-	   if ((markup_string_other[j]=='V')||(markup_string_other[j]=='n')||(markup_string_other[j]=='D')||(markup_string_other[j]=='J'))
-	     {
-	       shield_mutations_other[j]=true;
-	       shield_counter_other++;
-	       UCA_CDR3_other+=UCA_other[j];
-	       seq_CDR3_other+=seq_other[j];
-	     }
-	   else
-	     {
-	       shield_mutations_other[j]=false;
-	     }
-	 }
-       
-       int J_start;
-       J_start=shield_counter_other+V_gene_counter;
-       J_gene_counter=sequence.length()-J_start;
-       UCA_J=UCA_sequence.substr(J_start,J_gene_counter);
-       seq_J=sequence.substr(J_start,J_gene_counter);
-       
-       //if CDR3 is to be ignored, get CDR3 bases from markup string and store in bool vector
-       vector<bool> shield_mutations(markup_string.length(), false);
-       int shield_counter=0;
-       string UCA_CDR3="", seq_CDR3="";
-       for(int j=0; j<markup_string.length(); j++)
-	 {
-	   if ((markup_string[j]=='V')||(markup_string[j]=='n')||(markup_string[j]=='D')||(markup_string[j]=='J'))
-	     {
-	       shield_mutations[j]=true; 
-	       shield_counter++;
-	       UCA_CDR3+=UCA_sequence[j];
-	       seq_CDR3+=sequence[j];
-	     }
-	   else
-	     { 
-	       shield_mutations[j]=false; 
-	     }
-	 }
-       
+
+
+         //read_V(direct, v_input);
+
+         char * ptr;
+         char * buf=const_cast<char *>(markup_string.c_str());
+          int    ch = '3';
+           ptr = strrchr( buf, ch );
+           int leng = markup_string.length()-strlen(ptr)+1;
+
+
+         for(int j=0; j<markup_string.length(); j++)
+        {
+            if (j<leng)
+            {
+              V_gene_mark[j]=true;
+              V_gene_counter++;
+              UCA_V+=UCA_sequence[j];
+              seq_V+=sequence[j];
+              markup_string_V+=markup_string[j];
+            }
+            else
+            {
+              V_gene_mark[j]=false;
+              UCA_other+=UCA_sequence[j];
+              seq_other+=sequence[j];
+              markup_string_other+=markup_string[j];
+            }
+          }
+
+
+
+
+}
+
+ vector<bool> shield_mutations_other(markup_string_other.length(), false);
+ int shield_counter_other=0;
+ string UCA_CDR3_other="", seq_CDR3_other="";
+           for(int j=0; j<markup_string_other.length(); j++)
+          {
+          if ((markup_string_other[j]=='V')||(markup_string_other[j]=='n')||(markup_string_other[j]=='D')||(markup_string_other[j]=='J'))
+           {
+             shield_mutations_other[j]=true;
+             shield_counter_other++;
+             UCA_CDR3_other+=UCA_other[j];
+             seq_CDR3_other+=seq_other[j];
+           }
+          else
+           {
+             shield_mutations_other[j]=false;
+           }
+          }
+
+          int J_start;
+
+            J_start=shield_counter_other+V_gene_counter;
+
+
+
+
+          J_gene_counter=sequence.length()-J_start;
+          UCA_J=UCA_sequence.substr(J_start,J_gene_counter);
+          seq_J=sequence.substr(J_start,J_gene_counter);
+
+
+  //if CDR3 is to be ignored, get CDR3 bases from markup string and store in bool vector
+   vector<bool> shield_mutations(markup_string.length(), false);
+   int shield_counter=0;
+   string UCA_CDR3="", seq_CDR3="";
+   for(int j=0; j<markup_string.length(); j++)
+    {
+       if ((markup_string[j]=='V')||(markup_string[j]=='n')||(markup_string[j]=='D')||(markup_string[j]=='J'))
+        {
+           shield_mutations[j]=true;
+            shield_counter++;
+            UCA_CDR3+=UCA_sequence[j];
+            seq_CDR3+=sequence[j];
+        }
+        else
+         {
+            shield_mutations[j]=false;
+           }
+    }
+
+
+
        if (ignore_CDR3){cerr << "Shielding CDR3 from mutation. CDR3 has " << shield_counter << " bases, mutability zeroed out for these\n"; }
        int CDR3_length=shield_counter;
-       
+
        int mut_count=0, CDR3_mut_count=0, other_mut_count=0, V_mut_count=0, J_mut_count=0;
+
        int aa_mut_count=0, CDR3_aa_mut_count=0, V_aa_mut_count, other_aa_mut_count, J_aa_mut_count;
        string UCA_aa_sequence="", aa_sequence="", UCA_aa_CDR3="", seq_aa_CDR3="",UCA_aa_V="", seq_aa_V="", UCA_aa_J="", seq_aa_J="",UCA_aa_other="", seq_aa_other="";
        vector<Seq> seq_vector, UCA_seq_vector, aa_seq_vector, aa_UCA_seq_vector;
+
+
+
+
        process_SMUA_sequence_to_seq_vector(sequence, markup_string, seq_vector, dna_to_aa_map, S5F_5mers);
        process_SMUA_sequence_to_seq_vector(UCA_sequence, markup_string, UCA_seq_vector, dna_to_aa_map, S5F_5mers);
 
        //calc number of dna mutations
+
        number_of_mutations_two_seqs(UCA_sequence, sequence, mut_count);
        number_of_mutations_two_seqs(UCA_CDR3, seq_CDR3, CDR3_mut_count); //get mut count for CDR3
-       if(numbMutations>0)
-	 {
-	   mut_count=numbMutations;
-	   CDR3_mut_count=numbMutations;
-	 }
-       
+
        //calc number of amino acid mutations
+
+
        translate_dna_to_aa(UCA_sequence, UCA_aa_sequence, 1, dna_to_aa_map);
        translate_dna_to_aa(sequence, aa_sequence, 1, dna_to_aa_map);
        translate_dna_to_aa(seq_CDR3, seq_aa_CDR3, 1, dna_to_aa_map);
        translate_dna_to_aa(UCA_CDR3, UCA_aa_CDR3, 1, dna_to_aa_map);
        number_of_mutations_two_seqs(UCA_aa_sequence, aa_sequence, aa_mut_count);
        number_of_mutations_two_seqs(UCA_aa_CDR3, seq_aa_CDR3, CDR3_aa_mut_count);
-       map<int, map<char,double> > mature_mutant_positional_aa_freqs1, positional_aa_freqs1;
-       if (quick==true)
-	 {
-	   number_of_mutations_two_seqs(UCA_other, seq_other, other_mut_count); //get mut count for other
-	   number_of_mutations_two_seqs(UCA_V, seq_V, V_mut_count);
-	   number_of_mutations_two_seqs(UCA_J, seq_J, J_mut_count);
-	   translate_dna_to_aa(seq_V, seq_aa_V, 1, dna_to_aa_map);
-	   translate_dna_to_aa(UCA_V, UCA_aa_V, 1, dna_to_aa_map);
-	   translate_dna_to_aa(seq_other, seq_aa_other, 1, dna_to_aa_map);
-	   translate_dna_to_aa(UCA_other, UCA_aa_other, 1, dna_to_aa_map);
-	   translate_dna_to_aa(seq_J, seq_aa_J, 1, dna_to_aa_map);
-	   translate_dna_to_aa(UCA_J, UCA_aa_J, 1, dna_to_aa_map);
-	   number_of_mutations_two_seqs(UCA_aa_V, seq_aa_V, V_aa_mut_count);
-	   number_of_mutations_two_seqs(UCA_aa_other, seq_aa_other, other_aa_mut_count);
-	   number_of_mutations_two_seqs(UCA_aa_J, seq_aa_J, J_aa_mut_count);
 
-	   std::string str("IGHV");
-	   std::string str1("|");
-	   std::size_t found0=markup_header.find(str);
-	   std::size_t found1=markup_header.find(str1);
-	   std::size_t found2=markup_header.find(str1,found1+1);
-	   
-	   string UCA_sequence_name1=markup_header.substr(found0,found2-found0);
-	   V_mut_count=round((mut_count*seq_V.length()/(sequence.length()-shield_counter)+V_mut_count*3)/4);
-	   string freq_table=UCA_sequence_name1+"_"+std::to_string(V_mut_count)+".freq_table.txt";
-	   cerr<<"Sequence name"<<markup_header<<'\n';
-	   cerr << "Chosen V frequency table"<<freq_table<<"\n";
-	   
-	   string shift=UCA_aa_sequence;
-	   for (int i=0; i < UCA_aa_sequence.length(); i++){
-	     if (UCA_sequence[3*i]=='-' || UCA_sequence[3*i+1]=='-' || UCA_sequence[3*i+2]=='-')
-	       {
-		 shift[i]='1';
-	       }
-	     else
-	       {
-		 shift[i]='0';
-	       }
-	     
-	     if (sequence[3*i]=='-' || sequence[3*i+1]=='-' || sequence[3*i+2]=='-')
-	       {
-		 shift[i]='0';
-	       }
-	   }
-	   ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
-	   positional_aa_freqs1=v_input.find(freq_table)->second;
-	   ///dealing with insertion and deletion
-	   int cnt=0 ;
-	   for(int j=0; j<seq_V.length()/3; j++)
-	     {
-	       if (j>0 && shift[j-1]=='1' )
-		 {
-		   cnt+=1;
-		 }
-	       for(int k=0; k<amino_acids.size(); k++)
-		 {
-		   mature_mutant_positional_aa_freqs1[j][amino_acids[k]]=positional_aa_freqs1[j-cnt][amino_acids[k]];
-		 }
-	     }
-	   for(int j=0; j<seq_CDR3.length()/3; j++)
-	     {
-	       for(int k=0; k<amino_acids.size(); k++)
-		 {
-		   if (amino_acids[k]==seq_aa_CDR3[j])
-		     {
-		       mature_mutant_positional_aa_freqs1[j+seq_V.length()/3][amino_acids[k]]=1.0;
-		     }
-		   else
-		     {
-		       mature_mutant_positional_aa_freqs1[j+seq_V.length()/3][amino_acids[k]]=0.0;
-		     }
-		 }
-	     }
-	   std::string str2("IGHJ");
-	   found0=markup_header.find(str2);
-	   UCA_sequence_name1=markup_header.substr(found0,markup_header.length()-found0);
-	   J_mut_count=round((mut_count*seq_J.length()/(sequence.length()-shield_counter)+J_mut_count*3)/4);
-	   freq_table=UCA_sequence_name1+"_"+std::to_string(J_mut_count)+".freq_table.txt";
-	   cerr << "Chosen J frequency table:" << freq_table<<"\n";
-	   
-	   if (J_mut_count==0)
-	     {
-	       for(int j=0; j<UCA_J.length()/3; j++)
-		 {
-		   for(int k=0; k<amino_acids.size(); k++)
-		     {
-		       if (amino_acids[k]==seq_aa_J[j])
-			 {
-			   mature_mutant_positional_aa_freqs1[j+J_start/3][amino_acids[k]]=1.0;
-			 }
-		       else
-			 {
-			   mature_mutant_positional_aa_freqs1[j+J_start/3][amino_acids[k]]=0.0;
-			 }
-		     }
-		 }
-	     }
-	   else
-	     {
-	       positional_aa_freqs1=v_input.find(freq_table)->second;
-	       int cnt=0 ;
-	       for(int j=0; j<seq_J.length()/3; j++)
-		 {
-		   if (j>0 && shift[J_start/3+j-1]=='1' )
-		     {
-		       cnt+=1;
-		     }
-		   for(int k=0; k<amino_acids.size(); k++)
-		     {
-		       mature_mutant_positional_aa_freqs1[J_start/3+j][amino_acids[k]]=positional_aa_freqs1[j-cnt][amino_acids[k]];
-		     }
-		 }
-	     }
-	   if (ignore_CDR3)
-	     {
-	       mut_count-=CDR3_mut_count;
-	       aa_mut_count-=CDR3_aa_mut_count;
-	       other_mut_count-=CDR3_mut_count;
-	       other_aa_mut_count-=CDR3_aa_mut_count;
-	     }
-	   other_mut_count=round((mut_count*seq_other.length()/(sequence.length()-shield_counter_other)+3*other_mut_count)/4);
-	 }
-       else 
+
+  map<int, map<char,double> > mature_mutant_positional_aa_freqs1, positional_aa_freqs1;
+   if (quick==true) {
+       number_of_mutations_two_seqs(UCA_other, seq_other, other_mut_count); //get mut count for other
+       number_of_mutations_two_seqs(UCA_V, seq_V, V_mut_count);
+       number_of_mutations_two_seqs(UCA_J, seq_J, J_mut_count);
+
+       translate_dna_to_aa(seq_V, seq_aa_V, 1, dna_to_aa_map);
+       translate_dna_to_aa(UCA_V, UCA_aa_V, 1, dna_to_aa_map);
+       translate_dna_to_aa(seq_other, seq_aa_other, 1, dna_to_aa_map);
+       translate_dna_to_aa(UCA_other, UCA_aa_other, 1, dna_to_aa_map);
+       translate_dna_to_aa(seq_J, seq_aa_J, 1, dna_to_aa_map);
+       translate_dna_to_aa(UCA_J, UCA_aa_J, 1, dna_to_aa_map);
+
+       number_of_mutations_two_seqs(UCA_aa_V, seq_aa_V, V_aa_mut_count);
+       number_of_mutations_two_seqs(UCA_aa_other, seq_aa_other, other_aa_mut_count);
+       number_of_mutations_two_seqs(UCA_aa_J, seq_aa_J, J_aa_mut_count);
+
+       std::string str("IGHV");
+       std::string str1("|");
+       std::size_t found0=markup_header.find(str);
+       std::size_t found1=markup_header.find(str1);
+       std::size_t found2=markup_header.find(str1,found1+1);
+
+        string UCA_sequence_name1=markup_header.substr(found0,found2-found0);
+
+
+        V_mut_count=round((mut_count*seq_V.length()/(sequence.length()-shield_counter)+V_mut_count*3)/4);
+
+       string freq_table=UCA_sequence_name1+"_"+std::to_string(V_mut_count)+".freq_table.txt";
+
+              cerr<<"Sequence name"<<markup_header<<'\n';
+
+              cerr << "Chosen V frequency table"<<freq_table<<"\n";
+
+              string shift=UCA_aa_sequence;
+              for (int i=0; i < UCA_aa_sequence.length(); i++){
+                if (UCA_sequence[3*i]=='-' || UCA_sequence[3*i+1]=='-' || UCA_sequence[3*i+2]=='-') {
+                  shift[i]='1';
+                } else {
+                  shift[i]='0';
+                }
+
+                if (sequence[3*i]=='-' || sequence[3*i+1]=='-' || sequence[3*i+2]=='-') {
+                  shift[i]='0';
+                }
+              }
+
+
+
+              ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
+             positional_aa_freqs1=v_input.find(freq_table)->second;
+
+
+
+              ///dealing with insertion and deletion
+            int cnt=0 ;
+            for(int j=0; j<seq_V.length()/3; j++)
+           {
+
+              if (j>0 && shift[j-1]=='1' ) {
+                cnt+=1;
+              }
+
+              for(int k=0; k<amino_acids.size(); k++)
+              {
+                mature_mutant_positional_aa_freqs1[j][amino_acids[k]]=positional_aa_freqs1[j-cnt][amino_acids[k]];
+              }
+
+           }
+
+
+
+        for(int j=0; j<seq_CDR3.length()/3; j++) {
+
+          for(int k=0; k<amino_acids.size(); k++)
+            {
+
+              if (amino_acids[k]==seq_aa_CDR3[j]) {
+                  mature_mutant_positional_aa_freqs1[j+seq_V.length()/3][amino_acids[k]]=1.0;
+              } else {
+                  mature_mutant_positional_aa_freqs1[j+seq_V.length()/3][amino_acids[k]]=0.0;
+              }
+
+            }
+
+
+        }
+
+
+           std::string str2("IGHJ");
+            found0=markup_header.find(str2);
+
+
+
+             UCA_sequence_name1=markup_header.substr(found0,markup_header.length()-found0);
+
+            J_mut_count=round((mut_count*seq_J.length()/(sequence.length()-shield_counter)+J_mut_count*3)/4);
+
+
+
+
+
+              freq_table=UCA_sequence_name1+"_"+std::to_string(J_mut_count)+".freq_table.txt";
+
+
+
+
+                  cerr << "Chosen J frequency table:" << freq_table<<"\n";
+
+
+
+  if (J_mut_count==0) {
+    for(int j=0; j<UCA_J.length()/3; j++)
+     {
+      for(int k=0; k<amino_acids.size(); k++)
+        {
+
+          if (amino_acids[k]==seq_aa_J[j]) {
+              mature_mutant_positional_aa_freqs1[j+J_start/3][amino_acids[k]]=1.0;
+          } else {
+              mature_mutant_positional_aa_freqs1[j+J_start/3][amino_acids[k]]=0.0;
+          }
+
+        }
+
+     }
+  } else {
+        positional_aa_freqs1=v_input.find(freq_table)->second;
+
+        int cnt=0 ;
+        for(int j=0; j<seq_J.length()/3; j++)
+       {
+
+          if (j>0 && shift[J_start/3+j-1]=='1' ) {
+            cnt+=1;
+          }
+
+          for(int k=0; k<amino_acids.size(); k++)
+          {
+            mature_mutant_positional_aa_freqs1[J_start/3+j][amino_acids[k]]=positional_aa_freqs1[j-cnt][amino_acids[k]];
+          }
+
+       }
+
+
+  }
+
+
+
+       if (ignore_CDR3)
+   {
+     mut_count-=CDR3_mut_count;
+	   aa_mut_count-=CDR3_aa_mut_count;
+     other_mut_count-=CDR3_mut_count;
+     other_aa_mut_count-=CDR3_aa_mut_count;
+
+
+   }
+
+
+     other_mut_count=round((mut_count*seq_other.length()/(sequence.length()-shield_counter_other)+3*other_mut_count)/4);
+
+} else {
+
+
+       if (ignore_CDR3)
 	 {
-	   if (ignore_CDR3)
-	     {
-	       mut_count-=CDR3_mut_count;
-	       aa_mut_count-=CDR3_aa_mut_count;
-	       cerr << "ignoring " <<  CDR3_mut_count << " mutations\n" << UCA_CDR3 << "\n" << seq_CDR3 << "\n";
-	     }
+	   mut_count-=CDR3_mut_count;
+	   aa_mut_count-=CDR3_aa_mut_count;
+	   cerr << "ignoring " <<  CDR3_mut_count << " mutations\n" ;
 	 }
-       cerr << "processing " << sequence_name << " which has  " << mut_count << " mutations\n"; 
-       
+}
+       cerr << "processing " << sequence_name << " which has  " << mut_count << " mutations\n";
+
        //check for any UCA weirdness
-       //cout << sequence_name << "\n" << sequence << "\n" << UCA_sequence << "\n" << markup_string << "\n"; 
+       //cout << sequence_name << "\n" << sequence << "\n" << UCA_sequence << "\n" << markup_string << "\n";
        if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence))
 	 {
-	   cerr << "germline has stop codon...skipping this sequence\n"; 
-	   cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
+	   cerr << "germline has stop codon...skipping this sequence\n";
+	   cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n";
 	   continue;
 	 }
-       
-       //number of indels 
-       int insertion_count=0, deletion_count=0; 
+
+       //number of indels
+       int insertion_count=0, deletion_count=0;
        for(int j=0; j<UCA_sequence.length(); j++)
 	 {
 	   if (UCA_sequence[j] == '-'){insertion_count++;}
 	   if (sequence[j] == '-'){deletion_count++;}
 	 }
 
-       //simulate maturation at mutation frequency = to observed
-       cerr << "Simulating maturation...\n"; 
-       //       vector<string> mature_mutant_sequences(max_iter);
-       string mature_mutant_sequences[max_iter*branches];
-       string DNA_mutant_sequences[max_iter*branches];
-       map<int, map<char,double> > mature_mutant_positional_aa_freqs;
-       vector<string> mutant_sequences;
-       //vector<string> clonal_mutant_sequences;
-       //map<int, map<char,double> > mature_mutant_positional_aa_freqs;
-       if(quick==false)
-	 {
-	   stop_codon_count=0;
-	   vector<int> countStopCodons;
-	   int array_position=0;
-	   if(estimate)
-	     cerr << "Estimating maturation...\n";
-	   else
-	     cerr << "Simulating maturation...\n";
-	   for(int j=1; j<=max_iter; j++)
-	     {
-	       string _aa_sequence;
-	       print_pct_progress(j, max_iter, 1);
-	       if(lineage)
-		 {
-		   simulate_S5F_lineage(UCA_sequence, branches,mut_count, S5F_5mers, gen, dis,true, mutant_sequences, ignore_CDR3, shield_mutations);
-		   for(int i=0;i<mutant_sequences.size();i++)
-		     {
-		       DNA_mutant_sequences[array_position]=mutant_sequences[i];
-		       translate_dna_to_aa(mutant_sequences[i], _aa_sequence, 1, dna_to_aa_map);
-		       //	   mature_mutant_sequences[j-1]=aa_sequence2;
-		       mature_mutant_sequences[array_position]=_aa_sequence;
-		       array_position++;
-		     }
-		 }
-	       else
-		 {
-		   int stopCounts=0;
-		   stopCounts=simulate_S5F_mutation(UCA_sequence, mut_count, S5F_5mers, gen, dis,true, mutant_sequences, ignore_CDR3, shield_mutations);
-		   countStopCodons.push_back(stopCounts);
-		   DNA_mutant_sequences[array_position]=mutant_sequences[mutant_sequences.size()-1];
-		   translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], _aa_sequence, 1, dna_to_aa_map);
-		   //	   mature_mutant_sequences[j-1]=aa_sequence2;
-		   mature_mutant_sequences[array_position]=_aa_sequence;
-		   array_position++;
-		 }
-	     }
 
-	   cerr << "STOP CODON #: " << stop_codon_count << "\n"; 
-	   cerr << "done\n"; 
-	   
-	   //output simulated seqs if necessary
-	   if (output_seqs)
-	     {
-	       string seqs_fasta_file;
-	       string seqsDNA_fasta_file;
-	       //use different names if number of mutations are given
-	       if (numbMutations>0)
-		 {
-		   seqs_fasta_file=sequence_name+".N"+to_string(numbMutations)+".ARMADiLLO.simulated_seqs.fasta";
-		   seqsDNA_fasta_file=sequence_name+".N"+to_string(numbMutations)+".DNA.ARMADiLLO.simulated_seqs.fasta";
-		 }
-	       else
-		 {
-		   seqs_fasta_file=sequence_name+".ARMADiLLO.simulated_seqs.fasta";
-		   seqsDNA_fasta_file=sequence_name+".DNA.ARMADiLLO.simulated_seqs.fasta";
-		 }
-	       ofstream file_out;
-	       file_out.open(seqs_fasta_file.c_str());
-	       
-	       ofstream fileDNA_out;
-	       fileDNA_out.open(seqsDNA_fasta_file.c_str());
-	       //for loop to build branches
-	       for(int j=0; j<max_iter*branches; j++)
-		 {
-		   file_out << ">seq_" << j+1 << "\tstop codon count: "<< countStopCodons[j]<<"\n";
-		   file_out << mature_mutant_sequences[j] << "\n";
-		   fileDNA_out << ">seq_" << j+1 << "\tstop codon count: "<< countStopCodons[j]<< "\n";
-		   fileDNA_out << DNA_mutant_sequences[j] << "\n"; 
-		 }
-	       file_out.close();
-	       fileDNA_out.close();
-	     }
-	   
-	   ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
-	   ///init map to 0
-	   for(int j=0; j<mature_mutant_sequences[0].length(); j++)
-	     {
-	       for(int k=0; k<amino_acids.size(); k++)
-		 {
-		   mature_mutant_positional_aa_freqs[j][amino_acids[k]]=0;
-		 }
-	     }
-	   
-	   for(int j=0; j<max_iter*branches; j++)
-	     {
-	       //cout << ">mutant" << i+1 << "\n" << mature_mutant_sequences[i] << "\n"; 
-	       for(int k=0; k<mature_mutant_sequences[j].length(); k++)
-		 {
-		   mature_mutant_positional_aa_freqs[k][mature_mutant_sequences[j][k]]+=(1/((double)max_iter*branches));
-		 }
-	     }
-	 }
-       if (quick==true)
+
+       //simulate maturation at mutation frequency = to observed
+
+       vector<string> mature_mutant_sequences;
+       map<int, map<char,double> > mature_mutant_positional_aa_freqs;
+if (quick==false) {
+   cerr << "Simulating maturation...\n";
+   for(int j=1; j<=max_iter; j++)
 	 {
-	   mature_mutant_positional_aa_freqs=mature_mutant_positional_aa_freqs1;
-	   for(int j=0; j<UCA_CDR3.length()/3; j++)
-	     {
-	       for(int k=0; k<amino_acids.size(); k++)
-		 {
-		   if (UCA_aa_CDR3[j]==seq_aa_CDR3[j])
-		     {
-		       mature_mutant_positional_aa_freqs[j+V_gene_counter/3][amino_acids[k]]=1.0;
-		     }
-		   else
-		     {
-		       mature_mutant_positional_aa_freqs[j+V_gene_counter/3][amino_acids[k]]=0.0;
-		     }
-		 }
-	     }
-	   
-	   if (output_seqs)
-	     {
-	       cerr << "Can not generate output sequences due to estimating frequencies\n";
-	     }
+	   print_pct_progress(j, max_iter, 1);
+	   vector<string> mutant_sequences;
+
+
+        simulate_S5F_mutation(UCA_sequence, mut_count, S5F_5mers, gen, dis,true, mutant_sequences, ignore_CDR3, shield_mutations);
+
+	   string aa_sequence;
+	   translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], aa_sequence, 1, dna_to_aa_map);
+	   mature_mutant_sequences.push_back(aa_sequence);
 	 }
-       
+       cerr << "done\n";
+       ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
+
+       ///init map to 0
+       for(int j=0; j<mature_mutant_sequences[0].length(); j++)
+  {
+    for(int k=0; k<amino_acids.size(); k++)
+      {
+        mature_mutant_positional_aa_freqs[j][amino_acids[k]]=0;
+      }
+  }
+
+       for(int j=0; j<mature_mutant_sequences.size(); j++)
+  {
+    //cout << ">mutant" << i+1 << "\n" << mature_mutant_sequences[i] << "\n";
+    for(int k=0; k<mature_mutant_sequences[j].length(); k++)
+      {
+        mature_mutant_positional_aa_freqs[k][mature_mutant_sequences[j][k]]+=(1/(double)mature_mutant_sequences.size());
+      }
+  }
+
+}
+       //output simulated seqs if necessary
+       if (output_seqs)
+	 {
+	   string seqs_fasta_file=sequence_name+".ARMADiLLO.simulated_seqs.fasta";
+	    ofstream file_out;
+	    file_out.open(seqs_fasta_file.c_str());
+	    for(int j=0; j<mature_mutant_sequences.size(); j++)
+	      {
+		file_out << ">seq_" << j+1 << "\n";
+		file_out << mature_mutant_sequences[j] << "\n";
+	      }
+	    file_out.close();
+	 }
+
+
+ if (quick==true) {
+
+    mature_mutant_positional_aa_freqs=mature_mutant_positional_aa_freqs1;
+
+
+       for(int j=0; j<UCA_CDR3.length()/3; j++)
+        {
+          for(int k=0; k<amino_acids.size(); k++) {
+             if (UCA_aa_CDR3[j]==seq_aa_CDR3[j]) {
+                 mature_mutant_positional_aa_freqs[j+V_gene_counter/3][amino_acids[k]]=1.0;
+             } else {
+                 mature_mutant_positional_aa_freqs[j+V_gene_counter/3][amino_acids[k]]=0.0;
+             }
+          }
+        }
+
+  }
+
        ///annotate seq vector with positional aa freq
        for(int j=0; j<seq_vector.size(); j++) //per position
 	 {
 	   if ((UCA_seq_vector[j].base == "-") || (seq_vector[j].base== "-")) //indel special case
 	     {
 	       seq_vector[j].simulated_aa_positional_frequency=-99.99;
-	     } 
+	     }
 	   else
 	     {
 	       seq_vector[j].simulated_aa_positional_frequency=mature_mutant_positional_aa_freqs[seq_vector[j].aa_num-1][seq_vector[j].aa[0]];
 	     }
 	   seq_vector[j].all_simulated_aa_positional_frequencies_map=mature_mutant_positional_aa_freqs[seq_vector[j].aa_num-1];
 	 }
-       
-       ///tabulate 
+
+       ///tabulate
        int p02_count=0, p01_count=0, p001_count=0, p0001_count=0;
-       float PPvalue=0;
        map<string, int> region_counts;
+       //cerr << seq_vector.size() << "\t" << UCA_seq_vector.size() << "\n";
        for(int j=0; j<seq_vector.size(); j+=3)
 	 {
+	   // cerr << "j: " << j << "\n";
+
 	   if ((UCA_seq_vector[j].aa=="-")||(UCA_seq_vector[j].base=="-")){continue;} //skip if insertion i.e. gap in UCA_seq sequence
 	   if (j+1<seq_vector.size()){if(UCA_seq_vector[j+1].base=="-"){continue;}}
 	   if (j+2<seq_vector.size()){if(UCA_seq_vector[j+2].base=="-"){continue;}}
 
-	   if ((seq_vector[j].aa=="-")||(seq_vector[j].base=="-")){continue;} //skip if insertion i.e. gap in obs sequence  
+	   if ((seq_vector[j].aa=="-")||(seq_vector[j].base=="-")){continue;} //skip if insertion i.e. gap in obs sequence
 	   if (j+1<seq_vector.size()){if(seq_vector[j+1].base=="-"){continue;}}
 	   if (j+2<seq_vector.size()){if(seq_vector[j+2].base=="-"){continue;}}
 
@@ -831,20 +744,17 @@ int main(int argc, char *argv[])
 	   if (seq_vector[j].simulated_aa_positional_frequency<.01){p01_count++;}
 	   if (seq_vector[j].simulated_aa_positional_frequency<.001){p001_count++;}
 	   if (seq_vector[j].simulated_aa_positional_frequency<.0001){p0001_count++;}
-	   if (seq_vector[j].simulated_aa_positional_frequency>0)
-	     {
-	       PPvalue+=log(seq_vector[j].simulated_aa_positional_frequency);
-	     }
 	 }
-       int AAseqLen= UCA_seq_vector.size()/3;
-       if (mut_count==0) 
-	 { 
-	   cerr << "0 mutations found\n";   
-	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<<PPvalue/AAseqLen << "\n"; 
+
+       if (mut_count==0)
+	 {
+	   cerr << "0 mutations found\n";
+	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length << "\n";
+
 	 }
        else
 	 {
-	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << p02_count << "\t" << p01_count << "\t" << p001_count << "\t" << p0001_count << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<< PPvalue/AAseqLen <<"\n"; 
+	   cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << p02_count << "\t" << p01_count << "\t" << p001_count << "\t" << p0001_count << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<  "\n";
 	   ///print detailed ARMADiLLO output as HTML
 	   vector<vector<Seq> > all_sequences;
 	   all_sequences.push_back(UCA_seq_vector);
@@ -871,25 +781,126 @@ int main(int argc, char *argv[])
 	   aa_sequence_names.push_back(sequence_name);
 	   print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
 	 }
-       string output_freq_table;
-       if (numbMutations>0)
-	 {
-	   output_freq_table=sequence_name+".N"+to_string(numbMutations)+".freq_table.txt";
-	 }
-       else
-	 {
-	   output_freq_table=sequence_name+".freq_table.txt";
-	 }
+       string output_freq_table=sequence_name+".freq_table.txt";
        print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
-       
+
        clock_t end=clock();
        double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-       cerr << "TIME: " << sequence_name << " took " << elapsed_secs << " to process\n"; 
+       cerr << "TIME: " << sequence_name << " took " << elapsed_secs << " to process\n";
        total_elapsed_time+=elapsed_secs;
      }
-   cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
+   cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n";
    return 0;
 }
+
+void read_V(const std::string & name, map<string,map<int, map<char,double> >>  & v_input) {
+
+
+  vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
+  //path p("/Users/yw328/Documents/My_Scripts/Kevin-prog/ARMADiLLO/freq_table");
+  DIR *dpdf= opendir(name.c_str());
+  struct dirent *epdf;
+  map<int, map<char,double> > mature_mutant_positional_aa_freqs1;
+
+    clock_t begin=clock();
+    cerr <<"Loading, Please wait ......";
+  //dpdf = opendir(direct);
+  if (dpdf != NULL){
+     while ((epdf = readdir(dpdf))){
+       map<int, map<char,double> > mature_mutant_positional_aa_freqs;
+       string Vgen = name+'/'+ epdf->d_name;
+       ifstream file(Vgen, std::ios::in );
+       string dummyline;
+
+       if (!file.is_open()) {cerr << "could not open " << epdf->d_name << " ...exiting...\n"; exit(1);}
+       getline(file, dummyline);
+
+       int pos1; int pos=0; double A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y;
+
+       while ((!getline(file, dummyline).eof()))      {
+         //file >>pos1>>comma>>A>>comma>>C>>comma>>D>>comma>>E>>comma>>F>>comma>>G>>comma>>H>>I>>comma>>K>>comma>>L>>comma>>M>>comma>>N>>comma>>P>>comma>>Q>>comma>>R>>comma>>S>>comma>>T>>comma>>V>>comma>>W>>comma>>Y;
+         //cout <<dummyline<<'\n';
+         //cerr<<dummyline.length()<<'\n';
+         istringstream ss(dummyline);
+          getline(ss,dummyline,',')>>A;
+          getline(ss,dummyline,',')>>C;
+          getline(ss,dummyline,',')>>D;
+          getline(ss,dummyline,',')>>E;
+          getline(ss,dummyline,',')>>F;
+          getline(ss,dummyline,',')>>G;
+          getline(ss,dummyline,',')>>H;
+          getline(ss,dummyline,',')>>I;
+          getline(ss,dummyline,',')>>K;
+          getline(ss,dummyline,',')>>L;
+          getline(ss,dummyline,',')>>M;
+          getline(ss,dummyline,',')>>N;
+          getline(ss,dummyline,',')>>P;
+          getline(ss,dummyline,',')>>Q;
+          getline(ss,dummyline,',')>>R;
+          getline(ss,dummyline,',')>>S;
+          getline(ss,dummyline,',')>>T;
+          getline(ss,dummyline,',')>>V;
+          getline(ss,dummyline,',')>>W;
+          getline(ss,dummyline,',')>>Y;
+
+          mature_mutant_positional_aa_freqs[pos][amino_acids[0]]=A;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[1]]=C;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[2]]=D;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[3]]=E;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[4]]=F;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[5]]=G;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[6]]=H;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[7]]=I;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[8]]=K;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[9]]=L;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[10]]=M;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[11]]=N;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[12]]=P;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[13]]=Q;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[14]]=R;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[15]]=S;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[16]]=T;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[17]]=V;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[18]]=W;
+                mature_mutant_positional_aa_freqs[pos][amino_acids[19]]=Y;
+
+
+
+//cerr<<mature_mutant_positional_aa_freqs[pos][nucleotides[0]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[1]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[2]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[3]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[4]]<<mature_mutant_positional_aa_freqs[pos][nucleotides[5]]<<mature_mutant_positional_aa_freqs[pos][nucleotides[6]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[7]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[8]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[9]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[10]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[11]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[12]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[13]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[14]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[15]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[16]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[17]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[18]]<<' '<<mature_mutant_positional_aa_freqs[pos][nucleotides[19]]<<'\n';
+           //cerr<<pos<<' '<<'\n';
+           pos++;
+         }
+         file.close();
+         //string output_freq_table="temp.freq_table.txt";
+         //print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
+         //map<string,map<int, map<char,double> >> temp;
+         string tem=epdf->d_name;
+         //temp.insert({tem,mature_mutant_positional_aa_freqs});
+         //temp[tem]=mature_mutant_positional_aa_freqs;
+         v_input[tem]=mature_mutant_positional_aa_freqs;
+  //       v_input.push_back(temp);
+  /*     cerr<<" ";
+        cerr<<epdf->d_name<<'\n';
+        mature_mutant_positional_aa_freqs1=mature_mutant_positional_aa_freqs;
+
+*/
+//  mature_mutant_positional_aa_freqs1=v_input[tem];
+
+        // std::cout << epdf->d_name << std::endl;
+     }
+
+
+
+
+  }
+
+  clock_t end=clock();
+  double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+  cerr << "Reading in files took " << elapsed_secs << " to process\n";
+  closedir(dpdf);
+  return ;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///
@@ -897,43 +908,21 @@ int main(int argc, char *argv[])
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void read_treefile(string treefile)
-{
-  //test if file exists
-  ifstream file1(treefile.c_str(), std::ios::in );
-  if (!file1.is_open()) {cerr << "could not open " << treefile << " ...exiting...\n"; exit(1);}
-  //read file 
-  string file_line;
-  string treedata;
-  while (!getline(file1,file_line).eof())
-    {
-      chomp(file_line);
-      cout << file_line << "\n";
-      file_line.erase(remove(file_line.begin(),file_line.end(),'\n'),file_line.end());
-      treedata+=file_line;
-    }
-  cout << "data : "<< treedata<<"\n";
-  
-  exit(1);
-  return;
-}
-
-
 void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder)
 {
   vector<vector<vector<Seq> > > split_all_sequences;
   vector2D_to_3D(all_sequences,line_wrap_length, split_all_sequences);
   ///output html header
   string file_string="";
-  file_string+="<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>\n"; 
-  file_string+="<head>\n"; 
+  file_string+="<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>\n";
+  file_string+="<head>\n";
   file_string+=" <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n";
-  file_string+=" <title>Antibody Mutation Analysis</title>\n"; 
-  file_string+=" <link rel='stylesheet' href='sequence_color.css' />\n"; 
-  file_string+="</head>\n"; 
+  file_string+=" <title>Antibody Mutation Analysis</title>\n";
+  file_string+=" <link rel='stylesheet' href='sequence_color.css' />\n";
+  file_string+="</head>\n";
   file_string+="<body>\n";
-  file_string+="<p></p><br>\n"; 
-  //cerr << "number of splits: " << split_all_sequences.size() << "\n"; 
+  file_string+="<p></p><br>\n";
+  //cerr << "number of splits: " << split_all_sequences.size() << "\n";
   //for each split, make a HTML table and print it
   int counter=1;
   for(int i=0; i<split_all_sequences.size(); i++)
@@ -943,14 +932,14 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
       //convert seq vector to html table
       convert_2D_seq_vector_to_HTML_table_for_tiles_view(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff, color_ladder, counter);
       //missing step: stylize the table
-      
+
       //print HTML tables
       html_table.print(file_string);
-      file_string+="<p></p>\n"; 
+      file_string+="<p></p>\n";
     }
 
   file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
-  file_string+="</body>\n</html>\n"; 
+  file_string+="</body>\n</html>\n";
 
   ofstream file_out;
   file_out.open(filename.c_str());
@@ -968,7 +957,7 @@ void print_freq_table_to_file(string filename,  map<int, map<char,double> > &pos
 
   file_out << "pos";
   for(int i=0; i<amino_acids.size(); i++){file_out << "," << amino_acids[i];}
-  file_out << "\n"; 
+  file_out << "\n";
   for(int j=0; j<positional_aa_freqs.size(); j++)
     {
       file_out << j+1;
@@ -979,7 +968,7 @@ void print_freq_table_to_file(string filename,  map<int, map<char,double> > &pos
       file_out << "\n";
     }
   file_out.close();
- 
+
 }
 
 void print_output(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff)
@@ -988,15 +977,15 @@ void print_output(string filename, vector<vector<Seq> > &all_sequences, vector<s
   vector2D_to_3D(all_sequences,line_wrap_length, split_all_sequences);
   ///output html header
   string file_string="";
-  file_string+="<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>\n"; 
-  file_string+="<head>\n"; 
+  file_string+="<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>\n";
+  file_string+="<head>\n";
   file_string+=" <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n";
-  file_string+=" <title>Antibody Mutation Analysis</title>\n"; 
-  file_string+=" <link rel='stylesheet' href='AMA.css' />\n"; 
-  file_string+="</head>\n"; 
+  file_string+=" <title>Antibody Mutation Analysis</title>\n";
+  file_string+=" <link rel='stylesheet' href='AMA.css' />\n";
+  file_string+="</head>\n";
   file_string+="<body>\n";
-  file_string+="<p></p><br>\n"; 
-  //cerr << "number of splits: " << split_all_sequences.size() << "\n"; 
+  file_string+="<p></p><br>\n";
+  //cerr << "number of splits: " << split_all_sequences.size() << "\n";
   //for each split, make a HTML table and print it
   for(int i=0; i<split_all_sequences.size(); i++)
     {
@@ -1005,12 +994,12 @@ void print_output(string filename, vector<vector<Seq> > &all_sequences, vector<s
       //convert seq vector to html table
       convert_2D_seq_vector_to_HTML_table(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff);
       //missing step: stylize the table
-      
+
       //print HTML tables
       html_table.print(file_string);
-      file_string+="<p></p>\n"; 
+      file_string+="<p></p>\n";
     }
-  file_string+="<body>\n</html>\n"; 
+  file_string+="<body>\n</html>\n";
 
   ofstream file_out;
   file_out.open(filename.c_str());
@@ -1021,7 +1010,7 @@ void print_output(string filename, vector<vector<Seq> > &all_sequences, vector<s
 void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int last_mutate_position, bool is_shielded, vector<bool> &shield_mutations, vector<double> &last_mut_scores, vector<double> &mut_scores, double &last_sum_mut_scores, double &sum_mut_scores)
 {
   mut_scores.clear();
-  
+
   if (last_mutate_position==-2) //start from scratch
     {
       mut_scores.push_back(1);///first two positions set to neutral
@@ -1037,7 +1026,7 @@ void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int 
 	      fivemer=new_fivemer;
 	    }
 	  double mut_score;
-	  
+
 	  if (fivemer == "NO_SCORE"){mut_score=0;}
 	  else if (S5F_model.find(fivemer)==S5F_model.end()){cerr << "ERROR: inside simulation, can't find fivemer " << fivemer << " in S5F model\n"; mut_score=0;}
 	  else if ((is_shielded) && (shield_mutations[i]))//shield from mutation
@@ -1051,7 +1040,7 @@ void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int 
 	  mut_scores.push_back(mut_score);
 	  sum_mut_scores+=mut_score;
 	}
-      
+
       mut_scores.push_back(1);///last two positions set to neutral
       mut_scores.push_back(1);///
       sum_mut_scores+=2.0;
@@ -1060,13 +1049,13 @@ void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int 
     {
       if (last_mutate_position<2 || last_mutate_position>=sequence.length()-2)
 	{
-	  
+
 	}
       mut_scores=last_mut_scores;
       sum_mut_scores=last_sum_mut_scores;
       //only recompute the -2 to +2 windows
       //get indices of non-gap -2 +2, in case we're in the middle of a gapped region
-     
+
       int five_prime_count=0, three_prime_count=0;
       string fivemer="";
 
@@ -1078,7 +1067,7 @@ void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int 
 	{
 	   if (sequence[j] !='-')
 	    {
-	      //cerr << "5 prime: " << j << "\n"; 
+	      //cerr << "5 prime: " << j << "\n";
 	      window_indices.push_back(j);
 	      five_prime_count++;
 	    }
@@ -1089,7 +1078,7 @@ void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int 
 	{
 	  if (sequence[j] !='-')
 	    {
-	      // cerr << "3 prime: " << j << "\n"; 
+	      // cerr << "3 prime: " << j << "\n";
 	      window_indices.push_back(j);
 	      three_prime_count++;
 	    }
@@ -1100,7 +1089,7 @@ void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int 
       //iterate through indices stored from previous step and recompute the fivemer score for these
       for(int i=0; i<window_indices.size(); i++)
 	{
-	  // cerr << "window indices " << i << "\t" << window_indices[i] << "\n"; 
+	  // cerr << "window indices " << i << "\t" << window_indices[i] << "\n";
 	  int index=window_indices[i];
 	  //if (index == -1){cerr << "FATAL ERROR: Fivemer fail in gappy UCA region\n"; cerr << "last mutate pos: " << last_mutate_position << "\n"; exit(1);}
 
@@ -1114,7 +1103,7 @@ void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int 
 	      fivemer=new_fivemer;
 	    }
 	  double mut_score;
-	  
+
 	  if (fivemer == "NO_SCORE"){mut_score=0;}
 	  else if (S5F_model.find(fivemer)==S5F_model.end()){cerr << "ERROR: inside simulation, can't find fivemer " << fivemer << " in S5F model\n"; mut_score=0;}
 	  else if ((is_shielded) && (shield_mutations[index]))//shield from mutation
@@ -1132,17 +1121,19 @@ void get_mutability_scores(map<string,S5F_mut> &S5F_model, string sequence, int 
     }
 }
 
-int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mut> &S5F_model, mt19937 &gen, uniform_real_distribution<double> &dis, bool kill_stop_seqs, vector<string> &mutant_sequences, bool is_shielded, vector<bool> &shield_mutations)
+void simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mut> &S5F_model, mt19937 &gen, uniform_real_distribution<double> &dis, bool kill_stop_seqs, vector<string> &mutant_sequences, bool is_shielded, vector<bool> &shield_mutations)
 {
-  if (num_mutations==0){mutant_sequences.push_back(sequence); return 0;}
+  if (num_mutations==0){mutant_sequences.push_back(sequence); return;}
+
   ///iterate num_mutations times
   int last_mutate_position=-2;
   vector<double> last_mut_scores(sequence.length(), 0.0);
   double last_sum_mut_scores=0;
-  int stop_codon_count=0;
+
   for(int j=1; j<=num_mutations; j++)
     {
-      ///get mutability scores  
+
+      ///get mutability scores
       //clock_t begin, end, total_start; double elapsed;
       //begin=clock();
       //total_start=begin;
@@ -1157,22 +1148,25 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
       //elapsed = double(end - begin);// / CLOCKS_PER_SEC;
       //cerr << "S5F SCORING: " << elapsed << "\n";
       //begin=clock();
+
        //check
-      if(mut_scores.size() != shield_mutations.size()){cerr << "FATAL ERROR: shield mutations vector is not same size as mut_scores. Exiting\n"; exit(1);} 
-      // cerr << j << "\tsum of mut scores: " << sum_mut_scores << "\n"; 
-      ///convert mutability scores to probability of mutating position  
+      if(mut_scores.size() != shield_mutations.size()){cerr << "FATAL ERROR: shield mutations vector is not same size as mut_scores. Exiting\n"; exit(1);}
+
+      // cerr << j << "\tsum of mut scores: " << sum_mut_scores << "\n";
+
+      ///convert mutability scores to probability of mutating position
       vector<double> mut_probability_ladder(sequence.length(),0); ///cumulative distribution of probabilities
       mut_probability_ladder[0]=mut_scores[0]/(double) sum_mut_scores;
-      // cerr << "0" << "\t" << sequence[0] << "\t" << (mut_scores[0]/(double) sum_mut_scores) << "\t" << mut_probability_ladder[0] << "\n"; 
+      // cerr << "0" << "\t" << sequence[0] << "\t" << (mut_scores[0]/(double) sum_mut_scores) << "\t" << mut_probability_ladder[0] << "\n";
       for(int i=1; i<sequence.length(); i++)
 	{
-	  mut_probability_ladder[i]=mut_probability_ladder[i-1]+(mut_scores[i]/(double) sum_mut_scores); 
-	  //	    cerr << i << "\t" << sequence[i] << "\t" << (mut_scores[i]/(double) sum_mut_scores) << "\t" << mut_probability_ladder[i] << "\n"; 
+	  mut_probability_ladder[i]=mut_probability_ladder[i-1]+(mut_scores[i]/(double) sum_mut_scores);
+	  //	    cerr << i << "\t" << sequence[i] << "\t" << (mut_scores[i]/(double) sum_mut_scores) << "\t" << mut_probability_ladder[i] << "\n";
 	}
       //clock_t mut_ladder=clock();
       ///draw position randomly according to probability ladder
       double R=dis(gen);
-      //   cerr << "R: " << R << "\n"; 
+      //   cerr << "R: " << R << "\n";
       int mutate_position_i=-1;
       for(int i=0; i<mut_probability_ladder.size(); i++)  ///OPTIMIZE: combine the two loops into one
 	{
@@ -1186,7 +1180,7 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
       //end=clock();
       //elapsed = double(end - begin);// / CLOCKS_PER_SEC;
       //cerr << "LADDER BUILDING: " << elapsed << "\n";
-      //catch when mutate_position_i is not set 
+      //catch when mutate_position_i is not set
       if (mutate_position_i == -1)
 	{
 	  cerr << "FATAL ERROR: Setting mutation_position_i failed\n"; exit(1);
@@ -1196,14 +1190,14 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
 
       if (sequence.substr(mutate_position_i,1) == "-"){cerr << "mutate position should never be a gap\n"; int d; cin >> d; }
 
-      //cerr << j << "\t" << R << "\t" << mutate_position_i << "\t" << sequence[mutate_position_i] << "\t" << mut_scores[mutate_position_i] << "\t"; 
+      //cerr << j << "\t" << R << "\t" << mutate_position_i << "\t" << sequence[mutate_position_i] << "\t" << mut_scores[mutate_position_i] << "\t";
 
       ///mutate position according to substitution model
       map<char, double> substitution_probs;
       map<char, double> substitution_probs_uniform;
 
       //make uniform sub model when we need it
-      substitution_probs_uniform['A']=1.0/3.0; substitution_probs_uniform['C']=1.0/3.0; substitution_probs_uniform['G']=1.0/3.0; substitution_probs_uniform['T']=1.0/3.0; 
+      substitution_probs_uniform['A']=1.0/3.0; substitution_probs_uniform['C']=1.0/3.0; substitution_probs_uniform['G']=1.0/3.0; substitution_probs_uniform['T']=1.0/3.0;
       substitution_probs_uniform[sequence[mutate_position_i]]=0;
 
       if ((mutate_position_i<=1) || (mutate_position_i>=sequence.length()-2))///edge cases
@@ -1229,8 +1223,8 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
 	      substitution_probs=S5F_model[fivemer_to_mutate].substitutions;
 	    }
 	}
-      
-      // cerr << "A: " << substitution_probs['A'] << " C: " << substitution_probs['C'] << " G: " << substitution_probs['G'] << " T: " <<  substitution_probs['T'] << "\t"; 
+
+      // cerr << "A: " << substitution_probs['A'] << " C: " << substitution_probs['C'] << " G: " << substitution_probs['G'] << " T: " <<  substitution_probs['T'] << "\t";
       double R2=dis(gen);
       double cuml=0;
       char base_to_mutate_to='X';
@@ -1238,24 +1232,23 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
 	{
 	  if (R2<(cuml+it->second))
 	    {
-      base_to_mutate_to=it->first;
+	      base_to_mutate_to=it->first;
 	      break;
 	    }
 	  cuml+=it->second;
 	}
       if (base_to_mutate_to == 'X'){
-	cerr << "should not   t an X ever, paused\n"; 
-	cerr << "A: " << substitution_probs['A'] << " C: " << substitution_probs['C'] << " G: " << substitution_probs['G'] << " T: " <<  substitution_probs['T'] << "\n"; 
-	cerr << j << "\t" << mutate_position_i << "\t" << sequence[mutate_position_i] << "\n"; 
-	int d; cin >> d; 
+	cerr << "should not get an X ever, paused\n";
+	cerr << "A: " << substitution_probs['A'] << " C: " << substitution_probs['C'] << " G: " << substitution_probs['G'] << " T: " <<  substitution_probs['T'] << "\n";
+	cerr << j << "\t" << mutate_position_i << "\t" << sequence[mutate_position_i] << "\n";
+	int d; cin >> d;
       }
       string sequence_copy=sequence;
       sequence[mutate_position_i]=base_to_mutate_to;
 
       ///store
-      if (dna_sequence_has_stop_codon_in_reading_frame(sequence,mutate_position_i,base_to_mutate_to))
-	//if (dna_sequence_has_stop_codon_in_reading_frame(sequence))
-	{ sequence=sequence_copy; j--; stop_codon_count++;}///discard if hits a stop codon and start from prev sequence
+      if (dna_sequence_has_stop_codon_in_reading_frame(sequence))
+	{sequence=sequence_copy; j--;}///discard if hits a stop codon and start from prev sequence
       else
 	{
 	  mutant_sequences.push_back(sequence);
@@ -1263,53 +1256,16 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
       //end=clock();
       //elapsed = double(end - begin);// / CLOCKS_PER_SEC;
       //cerr << "THE REST: " << elapsed << "\n";
-      //cerr << "TOTAL: " << double(end - total_start); // / CLOCKS_PER_SEC << "\n"; 
-      //int d; cin >> d; 
+      //cerr << "TOTAL: " << double(end - total_start); // / CLOCKS_PER_SEC << "\n";
+      //int d; cin >> d;
+
+          //cerr<<num_mutations<<", "<<sequence.length()<<"Yunfei\n";
     }
 
-  return stop_codon_count;
+  return;
 }
 
 
-void simulate_S5F_lineage(string sequence, int number_branches, int &num_mutations, map<string,S5F_mut> &S5F_model, mt19937 &gen, uniform_real_distribution<double> &dis, bool kill_stop_seqs, vector<string> &clonal_sequences, bool is_shielded, vector<bool> &shield_mutations)
-{
-  if (num_mutations==0){clonal_sequences.push_back(sequence); return;}
-  vector<string> clonal_lineage;
-  int mutation_count;
-  int new_num_mutations;
-  string fred;
-      
-  simulate_S5F_mutation(sequence, num_mutations, S5F_model, gen, dis,kill_stop_seqs, clonal_lineage, is_shielded, shield_mutations);
-  clonal_sequences.push_back(clonal_lineage.back());
-  
-  for(int k=1;k<=number_branches-1;k++)
-    {
-      vector<int> mutation_count_vect;
-      vector<int> rand_index;
-
-      for(int i=0;i<clonal_lineage.size();i++)
-	{
-	  number_of_mutations_two_seqs(sequence,clonal_lineage[i],mutation_count);
-	  mutation_count_vect.push_back(mutation_count);
-	}
-	uniform_int_distribution<int> distribution(2,mutation_count-1);
-	int vect=distribution(gen);	  	
-	for(int i=0;i<mutation_count_vect.size();i++)
-	{
-	  if(mutation_count_vect[i]==vect)
-	    {
-	      rand_index.push_back(i);
-	    }
-	}
-      random_shuffle(rand_index.begin(),rand_index.end());
-      new_num_mutations=num_mutations-vect;
-      string new_seq=clonal_lineage[rand_index[0]];
-      number_of_mutations_two_seqs(sequence,new_seq,mutation_count);
-      simulate_S5F_mutation(new_seq, new_num_mutations, S5F_model, gen, dis,kill_stop_seqs, clonal_lineage, is_shielded, shield_mutations);
-      clonal_sequences.push_back(clonal_lineage.back());
-    }
-
-}
 
 void number_of_mutations_two_seqs(string &s1, string &s2, int &mutation_count)
 {
@@ -1331,9 +1287,9 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
 
   HTML::Tr final_row, penultimate_row;
   final_row.hclass="arrow_row";
- 
+
   final_row.cols.push_back(Td("absent","","","",""));
-   
+
   for(int i=0; i<v2.size(); i++) ///iterate over rows
     {
       HTML::Tr row1,row2,row3; ///equal to the number of attributes in seq obj we want to print
@@ -1341,7 +1297,7 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
       td.rowspan="3";
       if (i==v2.size()-1){td.rowspan="4";}
       row1.cols.push_back(td);
-      
+
       for(int j=0; j<v2[i].size(); j++) ///iterate over cols
 	{
 	  HTML::Td td1("","","","3",v2[i][j].aa);
@@ -1362,13 +1318,13 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
 	  string pos_freq_num_str(d_str);
 	  if (v2[i][j].simulated_aa_positional_frequency == -99.99){pos_freq_num_str=" N/A ";}
 	  //get frequencies of all aa at this position and print for tooltip hover table
-	  
+
 	  string tooltip_table_str="";
 	  vector<pair<char,double> > sorted_map_as_pair_vctr=sort_map_into_pair_vctr(v2[i][j].all_simulated_aa_positional_frequencies_map);
 	  for(int k=0; k<sorted_map_as_pair_vctr.size(); k++)
-	    { 
+	    {
 	      char aa_freq_str[20];
-	      sprintf(aa_freq_str,"%c: %.3f<br>",sorted_map_as_pair_vctr[k].first, sorted_map_as_pair_vctr[k].second); 
+	      sprintf(aa_freq_str,"%c: %.3f<br>",sorted_map_as_pair_vctr[k].first, sorted_map_as_pair_vctr[k].second);
 	      tooltip_table_str+=aa_freq_str;
 	    }
 	  string pos_freq_str="<div class=\"tooltip\">"+pos_freq_num_str+"<span class=\"tooltiptext\">"+tooltip_table_str+"</span></div>";
@@ -1385,11 +1341,11 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
 		   if (i==v2.size()-1)
 		     {
 		       if ((v2[0][j].S5F_mut_score<.3)&&(v2[0][j].S5F_mut_score!=-1)){tdF.value="<img style='vertical-align:bottom' src='unusual.png' alt='Unsusual'/>";}
-		       
+
 		     }
 		 }
 	    }
-	  if (j%3==0){row1.cols.push_back(td1);} //row 1: aa 
+	  if (j%3==0){row1.cols.push_back(td1);} //row 1: aa
 	  if (j%3==0){row2.cols.push_back(td2);} //row 2: aa number
 	  row3.cols.push_back(td3); //row 3: base and mut score
 	  if (i==v2.size()-1)
@@ -1412,10 +1368,7 @@ void process_SMUA_sequence_to_seq_vector(string &sequence, string &markup_string
   seq_vector.clear();
   string aa="X";
   int aa_counter=0;
-  if (sequence.length() != markup_string.length()){
-    cerr << "WARNING: sequence and markup string lengths are not identical\n";
-    cerr << sequence << "\n" << markup_string << "\n";
-  }
+  if (sequence.length() != markup_string.length()){cerr << "WARNING: sequence and markup string lengths are not identical\n"; }
 
   for(int i=0; i<sequence.length(); i++)
     {
@@ -1535,7 +1488,7 @@ template <typename Type>
 void vector2D_to_3D(vector<vector<Type> > &vector2D, int interval, vector<vector<vector<Type> > > &vector3D)
 {
   vector3D.clear();
-  // cerr << vector2D.size() << " by " << vector2D[0].size() << "\n"; 
+  // cerr << vector2D.size() << " by " << vector2D[0].size() << "\n";
   //slice each row by interval, and stack into one big 2D vector
   vector<vector<Type> > all_sliced_rows;
   int max_num_splits=0;
@@ -1549,7 +1502,7 @@ void vector2D_to_3D(vector<vector<Type> > &vector2D, int interval, vector<vector
 	}
       if (dim2.size() > max_num_splits){max_num_splits=dim2.size();}
     }
-  //cerr << "asr: " <<  all_sliced_rows.size() << "\n"; 
+  //cerr << "asr: " <<  all_sliced_rows.size() << "\n";
   //re-apportion the slices in the right order to a 3D vector
   for(int i=0; i<max_num_splits; i++)
     {
@@ -1558,11 +1511,11 @@ void vector2D_to_3D(vector<vector<Type> > &vector2D, int interval, vector<vector
       for(int j=0; j<vector2D.size(); j++)
 	{
 	  temp.push_back(all_sliced_rows[i+(j*max_num_splits)]);
-	  //cerr << " " << j << "\n"; 
+	  //cerr << " " << j << "\n";
 	}
       vector3D.push_back(temp);
     }
-  //cerr << vector3D.size() << " by " << vector3D[0].size() << " by " << vector3D[0][0].size() << "\n"; 
+  //cerr << vector3D.size() << " by " << vector3D[0].size() << " by " << vector3D[0][0].size() << "\n";
   return;
 }
 
@@ -1581,14 +1534,14 @@ void load_S5F_files(string mutability_filename, string substitution_filename, ma
       if (counter==0){counter++; continue;}//skip header line
 
       chomp(file1_str);
-      vector<string> tokens; 
+      vector<string> tokens;
       tokenize(file1_str, tokens," ");
       for(int i=0; i<tokens.size(); i++){boost::replace_all(tokens[i],"\"","");}
       S5F_mut temp(tokens[0],atof(tokens[1].c_str()),tokens[2],atof(tokens[3].c_str()),atof(tokens[4].c_str()));
       S5F_5mers[tokens[0]]=temp;
       counter++;
     }
-  
+
   //Open substitution CSV and read in
   ifstream file2(substitution_filename.c_str(), std::ios::in );
   if (!file2.is_open()) {cerr << "could not open " << mutability_filename << " ...exiting...\n"; exit(1);}
@@ -1600,7 +1553,7 @@ void load_S5F_files(string mutability_filename, string substitution_filename, ma
       if (counter==0){counter++; continue;}//skip header line
 
       chomp(file2_str);
-      vector<string> tokens; 
+      vector<string> tokens;
       tokenize(file2_str, tokens," ");
       for(int i=0; i<tokens.size(); i++){boost::replace_all(tokens[i],"\"","");}
       if (S5F_5mers.find(tokens[0]) != S5F_5mers.end())
@@ -1614,7 +1567,7 @@ void load_S5F_files(string mutability_filename, string substitution_filename, ma
       else{cerr << "ERROR parsing substitution.csv.  No fivemer " << tokens[0] << " found in mutability scores\n"; exit(1);}
       counter++;
     }
-  
+
   return;
 }
 
@@ -1633,7 +1586,6 @@ void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_
       UA_markup_file_contents.push_back(file_str);
     }
 
-  //cout << UA_markup_file_contents.size()<<"\n";
   for(int i=0; i<UA_markup_file_contents.size(); i+=6)
     {
       string sequence_name, trimmed_sequence, uca_name, uca_sequence, markup_name, markup_sequence;
@@ -1655,7 +1607,6 @@ void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_
       //store all in UA_alignments vector
       vector<string> temp;
       temp.push_back(sequence_name);
-		      
       temp.push_back(trimmed_sequence);
       temp.push_back(uca_name);
       temp.push_back(uca_sequence);
@@ -1663,8 +1614,9 @@ void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_
       temp.push_back(markup_sequence);
       UA_alignments_and_markup.push_back(temp);
     }
-    return;
+  return;
 }
+
 
 template <typename Type>
 string convert_to_string(Type t)
@@ -1675,9 +1627,10 @@ string convert_to_string(Type t)
 }
 
 
+
 vector<pair<char, double > > sort_map_into_pair_vctr(map<char,double> &M)
 {
-  
+
   vector<pair<char,double> > V;
   for(map<char,double>::iterator it=M.begin(); it !=M.end(); ++it)
     {
@@ -1723,11 +1676,11 @@ void correct_for_fivemer_with_gap(int i, string sequence, string &new_fivemer)
 	    }
 	  j++;
 	}
-      
+
       new_fivemer=five_prime_bases+sequence[i]+three_prime_bases;
       if (new_fivemer.length() !=5){new_fivemer="NO_SCORE";}
     }
-  
+
   return;
 }
 
@@ -1738,517 +1691,7 @@ void print_pct_progress(int i, int size, int level)
   int b=1;
   if (a>1){b=(int) a;}
   if ((i%b)==0){cerr << setw(3) << fixed << setprecision(level) << (i/(double)size)*100.0 << "%\r" << flush;}
-  
-}
 
-
-void cleanup_SMUA_sequences(string sequence_name, string markup_header, string UCA_sequence, string sequence, string markup, string &new_UCA_sequence, string &new_sequence, string &new_markup, string species, string chain_type, int &number_of_replacements, bool &error_status)
-{
-  if ( ((species =="human") && (chain_type != "heavy")) || ((species == "rhesus")&&(chain_type == "lambda")) ){ cerr << "CLEANUP ONLY WORKS FOR: Human/Rhesus Heavy and Rhesus Kappa for now. Sorry. Exiting.\n"; exit(1);}
-
-  new_UCA_sequence=UCA_sequence;
-  new_sequence=sequence;
-  new_markup=markup;
-  number_of_replacements=0;
-  if ((UCA_sequence.length() != sequence.length())||(sequence.length()!=markup.length())||(UCA_sequence.length()!=markup.length()))
-    {
-      cerr << "FATAL ERROR: UCA sequence, sequence and markup strings are not same length\n";
-      cerr << "UCA: " << UCA_sequence << "\nSEQ: " << sequence << "\nMRK: " << markup << "\n"; 
-      exit(1);
-    }
-
-  string H_J4_1="ACTACTTTGACTACTGGGGCCAAGGAACCCTGGTCACCGTCTCCTCAG";
-  string H_J4_2="ACTACTTTGACTACTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAG";
-  string H_J4_3="GCTACTTTGACTACTGGGGCCAAGGGACCCTGGTCACCGTCTCCTCAG";
-  string H_J3_1="TGATGCTTTTGATGTCTGGGGCCAAGGGACAATGGTCACCGTCTCTTCAG";
-  string H_J3_2="TGATGCTTTTGATATCTGGGGCCAAGGGACAATGGTCACCGTCTCTTCAG";
-  string H_J5_1="ACAACTGGTTCGACTCCTGGGGCCAAGGAACCCTGGTCACCGTCTCCTCAG";
-  string H_J5_2="ACAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAG";
-  string H_J1_1="GCTGAATACTTCCAGCACTGGGGCCAGGGCACCCTGGTCACCGTCTCCTCAG";
-  string H_J2_1="CTACTGGTACTTCGATCTCTGGGGCCGTGGCACCCTGGTCACTGTCTCCTCAG";
-  string H_J6_2="ATTACTACTACTACTACGGTATGGACGTCTGGGGCCAAGGGACCACGGTCACCGTCTCCTCA";
-  string H_J6_3="ATTACTACTACTACTACTACATGGACGTCTGGGGCAAAGGGACCACGGTCACCGTCTCCTCA";
-  string H_J6_1="ATTACTACTACTACTACGGTATGGACGTCTGGGGGCAAGGGACCACGGTCACCGTCTCCTCAG";
-  string H_J6_4="ATTACTACTACTACTACGGTATGGACGTCTGGGGCAAAGGGACCACGGTCACCGTCTCCTCAG";
-
-  string K_J1_1="GTGGACGTTCGGCCAAGGGACCAAGGTGGAAATCAAAC";
-  string K_J3_1="ATTCACTTTCGGCCCTGGGACCAAAGTGGATATCAAAC";
-  string K_J4_1="GCTCACTTTCGGCGGAGGGACCAAGGTGGAGATCAAAC";
-  string K_J5_1="GATCACCTTCGGCCAAGGGACACGACTGGAGATTAAAC";
-  string K_J2_1="TGTACACTTTTGGCCAGGGGACCAAGCTGGAGATCAAAC";
-
-  string L_J1_1="TTATGTCTTCGGAACTGGGACCAAGGTCACCGTCCTAG";
-  string L_J2_1="TGTGGTATTCGGCGGAGGGACCAAGCTGACCGTCCTAG";
-  string L_J3_2="TTGGGTGTTCGGCGGAGGGACCAAGCTGACCGTCCTAG";
-  string L_J6_1="TAATGTGTTCGGCAGTGGCACCAAGGTGACCGTCCTCG";
-  string L_J7_1="TGCTGTGTTCGGAGGAGGCACCCAGCTGACCGTCCTCG";
-  string L_J7_2="TGCTGTGTTCGGAGGAGGCACCCAGCTGACCGCCCTCG";
-  
-  string H_J4_1_rm="ACTACTTTGACTACTGGGGCCAGGGAGTCCTGGTCACCGTCTCCTCAG";
-  string H_J3_1_rm="TGATGCTTTTGATTTCTGGGGCCAAGGGCTCAGGGTCACCGTCTCTTCAG";
-  string H_J5_1_1_rm="ACAACCGGTTCGATGTCTGGGGCCCGGGAGTCCTGGTCACCGTCTCCTCAG";
-  string H_J5_1_2_rm="ACAACTCATTGGATGTCTGGGGCCAGGGAGTTCTGGTCACCGTCTCCTCAG";
-  string H_J5_2_1_rm="ACAACTCATTGGATGTCTGGGGCCGGGGAGTTCTGGTCACCGTCTCCTCAG";
-  string H_J1_1_rm="GCTGAATACTTCGAGTTCTGGGGCCAGGGCGCCCTGGTCACCGTCTCCTCAG";
-  string H_J2_1_rm="CTACTGGTACTTCGATCTCTGGGGCCCTGGCACCCCAATCACCATCTCCTCAG";
-  string H_J6_1_rm="ATTACTACGGTTTGGATTCCTGGGGCCAAGGGGTCGTCGTCACCGTCTCCTCAG";
-  string K_J1_1_1_rm="GTGGACGTTCGGCCAAGGGACCAAGGTGGAAATCAAAC";
-  string K_J3_1_1_rm="ATTCACTTTCGGCCCCGGGACCAAACTGGATATCAAAC";
-  string K_J4_1_1_rm="GCTCACTTTCGGCGGAGGGACCAAGGTGGAGATCAAAC";
-  string K_J5_1_1_rm="GATCACCTTCGGCCAAGGGACACGACTGGAGATTAAAC";
-  string K_J2_1_1_rm="TGTACAGTTTTGGCCAGGGGACCAAAGTGGAGATCAAAC";
-
-  map<string, map<string, string> > J_genes;
-  J_genes["human"]["IGHJ1*01"]=H_J1_1;
-  J_genes["human"]["IGHJ2*01"]=H_J2_1;
-  J_genes["human"]["IGHJ3*01"]=H_J3_1;
-  J_genes["human"]["IGHJ3*02"]=H_J3_2;
-  J_genes["human"]["IGHJ4*01"]=H_J4_1;
-  J_genes["human"]["IGHJ4*02"]=H_J4_2;
-  J_genes["human"]["IGHJ4*03"]=H_J4_3;
-  J_genes["human"]["IGHJ5*01"]=H_J5_1;
-  J_genes["human"]["IGHJ5*02"]=H_J5_2;
-  J_genes["human"]["IGHJ6*01"]=H_J6_1;
-  J_genes["human"]["IGHJ6*02"]=H_J6_2;
-  J_genes["human"]["IGHJ6*03"]=H_J6_3;
-  J_genes["human"]["IGHJ6*04"]=H_J6_4;
-
-  J_genes["human"]["IGKJ1*01"]=K_J1_1;
-  J_genes["human"]["IGKJ3*01"]=K_J3_1;
-  J_genes["human"]["IGKJ4*01"]=K_J4_1;
-  J_genes["human"]["IGKJ5*01"]=K_J5_1;
-  J_genes["human"]["IGKJ2*01"]=K_J2_1;
-  
-  J_genes["human"]["IGLJ1*01"]=L_J1_1;
-  J_genes["human"]["IGLJ2*01"]=L_J2_1;
-  J_genes["human"]["IGLJ3*02"]=L_J3_2;
-  J_genes["human"]["IGLJ6*01"]=L_J6_1;
-  J_genes["human"]["IGLJ7*01"]=L_J7_1;
-  J_genes["human"]["IGLJ7*02"]=L_J7_2;
-
-  
-  //rhesus
-  J_genes["rhesus"]["IGHJ4*01"]=H_J4_1_rm;
-  J_genes["rhesus"]["IGHJ3*01"]=H_J3_1_rm;
-  J_genes["rhesus"]["IGHJ5-1*01"]=H_J5_1_1_rm;
-  J_genes["rhesus"]["IGHJ5-1*02"]=H_J5_1_2_rm;
-  J_genes["rhesus"]["IGHJ5-2*01"]=H_J5_2_1_rm;
-  J_genes["rhesus"]["IGHJ1*01"]=H_J1_1_rm;
-  J_genes["rhesus"]["IGHJ2*01"]=H_J2_1_rm;
-  J_genes["rhesus"]["IGHJ6*01"]=H_J6_1_rm;
-  
-  J_genes["rhesus"]["IGKJ1-1*01"]=K_J1_1_1_rm;
-  J_genes["rhesus"]["IGKJ2-1*01"]=K_J2_1_1_rm;
-  J_genes["rhesus"]["IGKJ3-1*01"]=K_J3_1_1_rm;
-  J_genes["rhesus"]["IGKJ4-1*01"]=K_J4_1_1_rm;
-  J_genes["rhesus"]["IGKJ5-1*01"]=K_J5_1_1_rm;
-  
-  map<string, map<string, bool> > J_genes_too_long;
-  J_genes_too_long["human"]["IGHJ1*01"]=true;
-  J_genes_too_long["human"]["IGHJ2*01"]=true;
-  J_genes_too_long["human"]["IGHJ3*01"]=true;
-  J_genes_too_long["human"]["IGHJ3*02"]=true;
-  J_genes_too_long["human"]["IGHJ4*01"]=true;
-  J_genes_too_long["human"]["IGHJ4*02"]=true;
-  J_genes_too_long["human"]["IGHJ4*03"]=true;
-  J_genes_too_long["human"]["IGHJ5*01"]=true;
-  J_genes_too_long["human"]["IGHJ5*02"]=true;
-  J_genes_too_long["human"]["IGHJ6*01"]=true;
-  J_genes_too_long["human"]["IGHJ6*02"]=false;
-  J_genes_too_long["human"]["IGHJ6*03"]=false;
-  J_genes_too_long["human"]["IGHJ6*04"]=true;
-  
-  J_genes_too_long["rhesus"]["IGHJ4*01"]=true;
-  J_genes_too_long["rhesus"]["IGHJ3*01"]=true;
-  J_genes_too_long["rhesus"]["IGHJ5-1*01"]=true;
-  J_genes_too_long["rhesus"]["IGHJ5-1*02"]=true;
-  J_genes_too_long["rhesus"]["IGHJ5-2*01"]=true;
-  J_genes_too_long["rhesus"]["IGHJ1*01"]=true;
-  J_genes_too_long["rhesus"]["IGHJ2*01"]=true;
-  J_genes_too_long["rhesus"]["IGHJ6*01"]=true;
-  
-  J_genes_too_long["rhesus"]["IGKJ1-1*01"]=true;
-  J_genes_too_long["rhesus"]["IGKJ2-1*01"]=true;
-  J_genes_too_long["rhesus"]["IGKJ3-1*01"]=true;
-  J_genes_too_long["rhesus"]["IGKJ4-1*01"]=true; 
-  J_genes_too_long["rhesus"]["IGKJ5-1*01"]=true;
-
-  J_genes_too_long["human"]["IGKJ1*01"]=true;
-  J_genes_too_long["human"]["IGKJ3*01"]=true;
-  J_genes_too_long["human"]["IGKJ4*01"]=true;
-  J_genes_too_long["human"]["IGKJ5*01"]=true;
-  J_genes_too_long["human"]["IGKJ2*01"]=true;
-  
-  J_genes_too_long["human"]["IGLJ1*01"]=true;
-  J_genes_too_long["human"]["IGLJ2*01"]=true;
-  J_genes_too_long["human"]["IGLJ3*02"]=true;
-  J_genes_too_long["human"]["IGLJ6*01"]=true;
-  J_genes_too_long["human"]["IGLJ7*01"]=true;
-  J_genes_too_long["human"]["IGLJ7*02"]=true;
-
-  vector<string> tokens;
-  tokenize(markup_header,tokens,"|");
-
-  if ((chain_type=="heavy")&&(tokens[tokens.size()-1].substr(0,4) != "IGHJ")){cerr << "SMUA file is incorrectly formatted, missing J gene name in markup header\n"; error_status=true; return;}
-  if ((chain_type=="kappa")&&(tokens[tokens.size()-1].substr(0,4) != "IGKJ")){cerr << "SMUA file is incorrectly formatted, missing J gene name in markup header\n"; error_status=true; return;}
-  if ((chain_type=="lambda")&&(tokens[tokens.size()-1].substr(0,4) != "IGLJ")){cerr << "SMUA file is incorrectly formatted, missing J gene name in markup header\n"; error_status=true; return;}
- 
-  string J_gene_name=tokens[tokens.size()-1];
-
-  string J_gene_sequence=J_genes[species][J_gene_name];
-  //make sure the last 10 chars in UCA sequence match the last 10 chars in J gene 
-  bool UCA_matches_J10=true;
-  int UCA_len=UCA_sequence.length();
-  int j=J_gene_sequence.length()-1;
-  for(int i=UCA_len-1; i>UCA_len-1-10; i--)
-    {
-      if (UCA_sequence[i] != J_gene_sequence[j]){UCA_matches_J10=false;}
-      j--;
-    }
-  if (!UCA_matches_J10){cerr << "UCA does not match J gene sequence for " <<  J_gene_name << " in last 10 bases!\n";}
-  
-  // trim off the one base overhang when J overextends past last codon
-  int trim_end=UCA_len-1;
-  int seq_end=sequence.length()-1;
-  int markup_end=markup.length()-1;
-
-  if (J_genes_too_long[species][J_gene_name]){trim_end--; } 
-  new_UCA_sequence=UCA_sequence.substr(0,trim_end+1);
-  new_sequence=sequence.substr(0,trim_end+1);
-  new_markup=markup.substr(0,trim_end+1);
-
-  //fill in end gaps with UCA sequence
-  for(int i=new_sequence.length()-1; i>=0; i--)
-    {
-      if (new_sequence[i]!='-'){break;}
-      new_sequence[i]=new_UCA_sequence[i];
-      if (new_markup[i]=='U'){new_markup[i]='4';}
-      number_of_replacements++;
-    }
-
-  //deal with indels if there are any
-  bool indels_present=false;
-  for(int i=0; i<new_sequence.length(); i++)
-    {
-      if ((new_sequence[i] == '-') || (new_UCA_sequence[i]=='-')){indels_present=true;}
-    }
-
-  if (sequence_has_ambiguities(new_sequence)){cerr << "ERROR: " << sequence_name << " has ambiguities, cannot proceed\n"; error_status=true; return;}
-  if (indels_present == false){return;} //no indels, we're done
-  
-  //for now trust that Cloanalyst makes accurate alignments
-  //the rest assumes that the UCA sequence starts in frame 1
-  //INSERTION IN OBS
-  for(int i=1; i<new_UCA_sequence.length()-1; i++)
-    {
-      //Fix such that gaps cover codons without overhang
-      if ((new_UCA_sequence[i]=='-')&&(new_UCA_sequence[i-1]!='-'))
-	{
-	  int gap_start=i;
-	  int j=i;
-	  while(j<new_UCA_sequence.length())
-	    {
-	      if (new_UCA_sequence[j]=='-'){j++;}
-	      else{break;}
-	    }
-	  int gap_end=j-1;
-	  int gap_length=gap_end-gap_start+1;
-	  if (gap_length%3!=0){cerr << "ERROR1: " << sequence_name << " has gap at " << gap_start << " which is not multiple of 3\n"; error_status=true; return;}
-
-	  int frame_of_gap=gap_start%3;
-	  if (frame_of_gap==0){continue;}
-	  else if (frame_of_gap==1) //shift 3' base to right
-	    {
-	      char NU_hold=new_UCA_sequence[gap_start-1];
-	      char NM_hold=new_markup[gap_start-1];
-	      new_UCA_sequence[gap_start-1]='-';
-	      new_markup[gap_start-1]='-';
-	      new_UCA_sequence[gap_end]=NU_hold;
-	      new_markup[gap_end]=NM_hold;
-	    }
-	  else if (frame_of_gap==2) //shift 5' base to left
-	    {
-	      char NU_hold=new_UCA_sequence[gap_end+1];
-	      char NM_hold=new_markup[gap_end+1];
-	      new_UCA_sequence[gap_end+1]='-';
-	      new_markup[gap_end+1]='-';
-	      new_UCA_sequence[gap_start]=NU_hold;
-	      new_markup[gap_start]=NM_hold;
-	    }
-	}
-    }
-
-   //DELETION IN OBS
-  for(int i=1; i<new_sequence.length()-1; i++)
-    {
-      //Fix such that gaps cover codons without overhang
-      if ((new_sequence[i]=='-')&&(new_sequence[i-1]!='-'))
-	{
-	  int gap_start=i;
-	  int j=i;
-	  while(j<new_sequence.length())
-	    {
-	      if (new_sequence[j]=='-'){j++;}
-	      else{break;}
-	    }
-	  int gap_end=j-1;
-	  int gap_length=gap_end-gap_start+1;
-	  if (gap_length%3!=0){cerr << "ERROR2: " << sequence_name << " has gap at " << gap_start << " which is not multiple of 3\n"; error_status=true; return;}
-
-	  int frame_of_gap=gap_start%3;
-	  if (frame_of_gap==0){continue;}
-	  else if (frame_of_gap==1) //shift 3' base to right
-	    {
-	      char NU_hold=new_sequence[gap_start-1];
-	      new_sequence[gap_start-1]='-';
-	      new_sequence[gap_end]=NU_hold;
-	    }
-	  else if (frame_of_gap==2) //shift 5' base to left
-	    {
-	      char NU_hold=new_sequence[gap_end+1];
-	      char NM_hold=new_markup[gap_end+1];
-	      new_sequence[gap_end+1]='-';
-	      new_sequence[gap_start]=NU_hold;
-	    }
-	}
-    }
-  
-  return;
-}
-
-bool sequence_has_ambiguities(string sequence)
-{
-  for(int i=0; i<sequence.length(); i++)
-    {
-      if ((sequence[i]!='A')&&(sequence[i]!='C')&&(sequence[i]!='T')&&(sequence[i]!='G')&&(sequence[i]!='-')){ return true;}
-    }
-  return false;
-}
-
-void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter)
-{
-  //RULER
-  HTML::Tr ruler1_row, ruler2_row;
-  HTML::Td ruler1("ruler","","","","");
-  HTML::Td ruler2("ruler","","","","");
-  ruler1_row.cols.push_back(ruler1);
-  ruler2_row.cols.push_back(ruler2);
-
-  if (v2.size()==0){cerr << "No data for HTML table. Exiting\n"; exit(1);}
-  for(int j=0; j<v2[0].size(); j++) ///iterate over cols
-    {
-      ruler1.value=""; 
-      ruler2.value="";
-      if ((counter+j)%10==0)
-	{
-	  ostringstream s;
-	  s<<counter+j;
-	  ruler1.value=s.str();
-	  ruler2.value="|";
-	}
-      else if ((counter+j)%5==0){ruler2.value="|";}
-      ruler1_row.cols.push_back(ruler1);
-      ruler2_row.cols.push_back(ruler2);
-    }      
-  counter+=v2[0].size();
-
-  html_table.rows.push_back(ruler1_row);
-  html_table.rows.push_back(ruler2_row);
-
-  //REST OF ROWS
-  for(int i=0; i<v2.size(); i++) ///iterate over rows
-    {
-      HTML::Tr row1, cdr_row, spacer_row; 
-    
-      //string str0="this";
-      HTML::Td td0("seq_name","","","",names[i]);
-      HTML::Td blank("noborder","","","","");
-   
-      row1.cols.push_back(td0);
-      cdr_row.cols.push_back(blank);
-      spacer_row.cols.push_back(blank);
-
-      for(int j=0; j<v2[i].size(); j++) ///iterate over cols
-	{
-	  string str1="<div class=\"sm\">"+v2[i][j].aa+"</div>"; //
-	  HTML::Td td1("","","","",str1);
-	  HTML::Td td_cdr("noborder","","","","");
-	  HTML::Td spacer("spacer","","","","");
-	  //assign category for coloring
-	  for(int k=0; k<color_ladder.size(); k++)
-	    {
-	      if (v2[i][j].simulated_aa_positional_frequency <= color_ladder[k])
-		{
-		  ostringstream ss;
-		  ss << "color_cat" << k+1;
-		  td1.hclass=ss.str();
-		  break;
-		}
-	    }
-	  if (v2[i][j].aa=="Z"){td1.hclass="noborder"; td1.value="";}
-	  if ((v2[i][j].CDR_markup=="1")||(v2[i][j].CDR_markup=="2")||(v2[i][j].CDR_markup=="3")){td_cdr.hclass="CDR";}
-	  if (v2[i][j].isMut){td1.hclass+=" mut";}
-	
-	  row1.cols.push_back(td1); //row 1: amino acid
-	  cdr_row.cols.push_back(td_cdr); //row 0 CDR line
-	  spacer_row.cols.push_back(spacer);//row 2 spacer line
-	}
-
-      //collapse cdr row elements
-      for(int j=0; j<cdr_row.cols.size(); j++)
-	{
-	  if ( (((j==0)&&cdr_row.cols[j].hclass=="CDR")) || ((j>0)&&(cdr_row.cols[j-1].hclass!="CDR")&&(cdr_row.cols[j].hclass=="CDR"))    ) //start of CDR
-	    {
-	      int cdr_start=j;
-	      int k=j;
-	      while ((k<cdr_row.cols.size())&&(cdr_row.cols[k].hclass=="CDR"))
-		{
-		  k++;
-		}
-	      int cdr_end=k-1;
-	      //cerr << cdr_start << "\t" << cdr_end << "\n"; 
-	      // int d; cin >> d;
-	      ostringstream s;
-	      s<<cdr_end-cdr_start+1;
-	      cdr_row.cols[cdr_start].colspan=s.str();
-	      if (cdr_end-cdr_start>=1){
-		cdr_row.cols.erase(cdr_row.cols.begin()+cdr_start+1, cdr_row.cols.begin()+cdr_end+1);}     
-	    }
-	}
-
-      html_table.rows.push_back(cdr_row);
-      html_table.rows.push_back(row1);
-      html_table.rows.push_back(spacer_row);
-    }
-  return;
-}
-
-void replace_UCA_sequence_in_SMUA(string old_obs_sequence, string old_uca_sequence, string old_markup_string, string input_uca_sequence, string &new_obs_sequence, string &new_uca_sequence, string &new_markup_string, bool ignore_warnings)
-{
-  new_obs_sequence="", new_uca_sequence="", new_markup_string="";
-  map<char,map<char,int> > scoring_matrix;
-  load_EDNAFULL_matrix(scoring_matrix);
-  double gap_open=-20, gap_extend=-2, score=0;
-  string alignment_input_uca_sequence, alignment_old_obs_sequence;
-  pairwise_align_sequences_semiglobal_w_affine_gap(scoring_matrix, input_uca_sequence, old_obs_sequence, gap_open, gap_extend, alignment_input_uca_sequence, alignment_old_obs_sequence, score);
-
-  int oms_counter=0;
-  for(int i=0; i<alignment_input_uca_sequence.length(); i++)
-    {
-      if (alignment_input_uca_sequence[i]=='-') //del
-	{
-	  new_markup_string+=old_markup_string[oms_counter];
-	  oms_counter++;
-	}
-      else if (alignment_old_obs_sequence[i]=='-') //ins 
-	{
-	  new_markup_string+="-";
-	}
-      else //no indel
-	{
-	  new_markup_string+=old_markup_string[oms_counter];
-	  oms_counter++;
-	}
-    }
-
-  new_obs_sequence=alignment_old_obs_sequence;
-  new_uca_sequence=alignment_input_uca_sequence;
-
-  cout << ">new_obs\n" << new_obs_sequence << "\n>new_uca\n" << new_uca_sequence << "\n>new_markup\n" << new_markup_string << "\n";
-  return;
-}
-
-void read_V(const std::string & name, map<string,map<int, map<char,double> >>  & v_input) {
-  vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
-  //path p("/Users/yw328/Documents/My_Scripts/Kevin-prog/ARMADiLLO/freq_table");
-  DIR* dpdf= opendir(name.c_str());
-  struct dirent * epdf;
-  //while ((epdf=readdir(dpdf))!=NULL)
-  //  {
-  //    cout << epdf->d_name<<"\n";
-  //  }
-  map<int, map<char,double> > mature_mutant_positional_aa_freqs1;
-  
-    clock_t begin=clock();
-    cerr <<"Loading, Please wait ......";
-  //dpdf = opendir(direct);
-
-     while ((epdf=readdir(dpdf))!=NULL){
-       
-       map<int, map<char,double> > mature_mutant_positional_aa_freqs;
-       string filename= epdf->d_name;
-       //       cout << name << "\t" << filename << "\n";
-       if(filename.length()<3)
-	 continue;
-       string Vgen = name+'/'+ filename;
-       ifstream file;
-       file.open(Vgen, std::ios::in );
-       if(!file)
-	 {
-	   continue;
-	 }
-       string dummyline;
-       //if (!file.is_open()) {cerr << "could not open " << filename << " ...exiting...\n"; exit(1);}
-
-       int pos1; int pos=-1; double A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y;
-       while((!getline(file,dummyline).eof())){
-	 if(pos==-1){pos++;continue;}
-	 istringstream ss(dummyline);
-	 getline(ss,dummyline,',')>>A;
-	 getline(ss,dummyline,',')>>C;
-	 getline(ss,dummyline,',')>>D;
-	 getline(ss,dummyline,',')>>E;
-	 getline(ss,dummyline,',')>>F;
-	 getline(ss,dummyline,',')>>G;
-	 getline(ss,dummyline,',')>>H;
-	 getline(ss,dummyline,',')>>I;
-	 getline(ss,dummyline,',')>>K;
-	 getline(ss,dummyline,',')>>L;
-	 getline(ss,dummyline,',')>>M;
-	 getline(ss,dummyline,',')>>N;
-	 getline(ss,dummyline,',')>>P;
-	 getline(ss,dummyline,',')>>Q;
-	 getline(ss,dummyline,',')>>R;
-	 getline(ss,dummyline,',')>>S;
-	 getline(ss,dummyline,',')>>T;
-	 getline(ss,dummyline,',')>>V;
-	 getline(ss,dummyline,',')>>W;
-	 getline(ss,dummyline,',')>>Y;
-	 
-	 
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[0]]=A;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[1]]=C;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[2]]=D;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[3]]=E;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[4]]=F;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[5]]=G;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[6]]=H;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[7]]=I;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[8]]=K;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[9]]=L;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[10]]=M;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[11]]=N;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[12]]=P;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[13]]=Q;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[14]]=R;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[15]]=S;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[16]]=T;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[17]]=V;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[18]]=W;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[19]]=Y;
-
-	 pos++;
-	 //cout <<Vgen<<"\t"<< Q<<"\t"<<C<<"\t"<<D<<"\t"<<E<<"\t"<<F<<"\t"<<G<<"\t"<<H<<"\n";
-       }
-       file.close();
-       v_input[filename]=mature_mutant_positional_aa_freqs;
-     }
-
-  clock_t end=clock();
-  double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-  cerr << "Reading in files took " << elapsed_secs << " to process\n";
-  closedir(dpdf);
-  return ;
 }
 
 map<string, map<string, string> > J_genes_list()
@@ -2341,7 +1784,460 @@ map<string, map<string, string> > J_genes_list()
   return J_genes;
 }
 
-bool fexists(const std::string& filename) {
-  std::ifstream ifile(filename.c_str());
-  return (bool)ifile;
+void cleanup_SMUA_sequences(string sequence_name, string markup_header, string UCA_sequence, string sequence, string markup, string &new_UCA_sequence, string &new_sequence, string &new_markup, string species, string chain_type, int &number_of_replacements, bool &error_status)
+{
+  if ( ((species =="human") && (chain_type != "heavy")) || ((species == "rhesus")&&(chain_type == "lambda")) ){ cerr << "CLEANUP ONLY WORKS FOR: Human/Rhesus Heavy and Rhesus Kappa for now. Sorry. Exiting.\n"; exit(1);}
+
+  new_UCA_sequence=UCA_sequence;
+  new_sequence=sequence;
+  new_markup=markup;
+  number_of_replacements=0;
+  if ((UCA_sequence.length() != sequence.length())||(sequence.length()!=markup.length())||(UCA_sequence.length()!=markup.length())){cerr << "FATAL ERROR: UCA sequence, sequence and markup strings are not same length\n"; exit(1);}
+
+  string H_J4_1="ACTACTTTGACTACTGGGGCCAAGGAACCCTGGTCACCGTCTCCTCAG";
+  string H_J4_2="ACTACTTTGACTACTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAG";
+  string H_J4_3="GCTACTTTGACTACTGGGGCCAAGGGACCCTGGTCACCGTCTCCTCAG";
+  string H_J3_1="TGATGCTTTTGATGTCTGGGGCCAAGGGACAATGGTCACCGTCTCTTCAG";
+  string H_J3_2="TGATGCTTTTGATATCTGGGGCCAAGGGACAATGGTCACCGTCTCTTCAG";
+  string H_J5_1="ACAACTGGTTCGACTCCTGGGGCCAAGGAACCCTGGTCACCGTCTCCTCAG";
+  string H_J5_2="ACAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAG";
+  string H_J1_1="GCTGAATACTTCCAGCACTGGGGCCAGGGCACCCTGGTCACCGTCTCCTCAG";
+  string H_J2_1="CTACTGGTACTTCGATCTCTGGGGCCGTGGCACCCTGGTCACTGTCTCCTCAG";
+  string H_J6_2="ATTACTACTACTACTACGGTATGGACGTCTGGGGCCAAGGGACCACGGTCACCGTCTCCTCA";
+  string H_J6_3="ATTACTACTACTACTACTACATGGACGTCTGGGGCAAAGGGACCACGGTCACCGTCTCCTCA";
+  string H_J6_1="ATTACTACTACTACTACGGTATGGACGTCTGGGGGCAAGGGACCACGGTCACCGTCTCCTCAG";
+  string H_J6_4="ATTACTACTACTACTACGGTATGGACGTCTGGGGCAAAGGGACCACGGTCACCGTCTCCTCAG";
+
+  string K_J1_1="GTGGACGTTCGGCCAAGGGACCAAGGTGGAAATCAAAC";
+  string K_J3_1="ATTCACTTTCGGCCCTGGGACCAAAGTGGATATCAAAC";
+  string K_J4_1="GCTCACTTTCGGCGGAGGGACCAAGGTGGAGATCAAAC";
+  string K_J5_1="GATCACCTTCGGCCAAGGGACACGACTGGAGATTAAAC";
+  string K_J2_1="TGTACACTTTTGGCCAGGGGACCAAGCTGGAGATCAAAC";
+
+  string L_J1_1="TTATGTCTTCGGAACTGGGACCAAGGTCACCGTCCTAG";
+  string L_J2_1="TGTGGTATTCGGCGGAGGGACCAAGCTGACCGTCCTAG";
+  string L_J3_2="TTGGGTGTTCGGCGGAGGGACCAAGCTGACCGTCCTAG";
+  string L_J6_1="TAATGTGTTCGGCAGTGGCACCAAGGTGACCGTCCTCG";
+  string L_J7_1="TGCTGTGTTCGGAGGAGGCACCCAGCTGACCGTCCTCG";
+  string L_J7_2="TGCTGTGTTCGGAGGAGGCACCCAGCTGACCGCCCTCG";
+
+  string H_J4_1_rm="ACTACTTTGACTACTGGGGCCAGGGAGTCCTGGTCACCGTCTCCTCAG";
+  string H_J3_1_rm="TGATGCTTTTGATTTCTGGGGCCAAGGGCTCAGGGTCACCGTCTCTTCAG";
+  string H_J5_1_1_rm="ACAACCGGTTCGATGTCTGGGGCCCGGGAGTCCTGGTCACCGTCTCCTCAG";
+  string H_J5_1_2_rm="ACAACTCATTGGATGTCTGGGGCCAGGGAGTTCTGGTCACCGTCTCCTCAG";
+  string H_J5_2_1_rm="ACAACTCATTGGATGTCTGGGGCCGGGGAGTTCTGGTCACCGTCTCCTCAG";
+  string H_J1_1_rm="GCTGAATACTTCGAGTTCTGGGGCCAGGGCGCCCTGGTCACCGTCTCCTCAG";
+  string H_J2_1_rm="CTACTGGTACTTCGATCTCTGGGGCCCTGGCACCCCAATCACCATCTCCTCAG";
+  string H_J6_1_rm="ATTACTACGGTTTGGATTCCTGGGGCCAAGGGGTCGTCGTCACCGTCTCCTCAG";
+  string K_J1_1_1_rm="GTGGACGTTCGGCCAAGGGACCAAGGTGGAAATCAAAC";
+  string K_J3_1_1_rm="ATTCACTTTCGGCCCCGGGACCAAACTGGATATCAAAC";
+  string K_J4_1_1_rm="GCTCACTTTCGGCGGAGGGACCAAGGTGGAGATCAAAC";
+  string K_J5_1_1_rm="GATCACCTTCGGCCAAGGGACACGACTGGAGATTAAAC";
+  string K_J2_1_1_rm="TGTACAGTTTTGGCCAGGGGACCAAAGTGGAGATCAAAC";
+
+  map<string, map<string, string> > J_genes;
+  J_genes["human"]["IGHJ1*01"]=H_J1_1;
+  J_genes["human"]["IGHJ2*01"]=H_J2_1;
+  J_genes["human"]["IGHJ3*01"]=H_J3_1;
+  J_genes["human"]["IGHJ3*02"]=H_J3_2;
+  J_genes["human"]["IGHJ4*01"]=H_J4_1;
+  J_genes["human"]["IGHJ4*02"]=H_J4_2;
+  J_genes["human"]["IGHJ4*03"]=H_J4_3;
+  J_genes["human"]["IGHJ5*01"]=H_J5_1;
+  J_genes["human"]["IGHJ5*02"]=H_J5_2;
+  J_genes["human"]["IGHJ6*01"]=H_J6_1;
+  J_genes["human"]["IGHJ6*02"]=H_J6_2;
+  J_genes["human"]["IGHJ6*03"]=H_J6_3;
+  J_genes["human"]["IGHJ6*04"]=H_J6_4;
+
+  J_genes["human"]["IGKJ1*01"]=K_J1_1;
+  J_genes["human"]["IGKJ3*01"]=K_J3_1;
+  J_genes["human"]["IGKJ4*01"]=K_J4_1;
+  J_genes["human"]["IGKJ5*01"]=K_J5_1;
+  J_genes["human"]["IGKJ2*01"]=K_J2_1;
+
+  J_genes["human"]["IGLJ1*01"]=L_J1_1;
+  J_genes["human"]["IGLJ2*01"]=L_J2_1;
+  J_genes["human"]["IGLJ3*02"]=L_J3_2;
+  J_genes["human"]["IGLJ6*01"]=L_J6_1;
+  J_genes["human"]["IGLJ7*01"]=L_J7_1;
+  J_genes["human"]["IGLJ7*02"]=L_J7_2;
+
+
+  //rhesus
+  J_genes["rhesus"]["IGHJ4*01"]=H_J4_1_rm;
+  J_genes["rhesus"]["IGHJ3*01"]=H_J3_1_rm;
+  J_genes["rhesus"]["IGHJ5-1*01"]=H_J5_1_1_rm;
+  J_genes["rhesus"]["IGHJ5-1*02"]=H_J5_1_2_rm;
+  J_genes["rhesus"]["IGHJ5-2*01"]=H_J5_2_1_rm;
+  J_genes["rhesus"]["IGHJ1*01"]=H_J1_1_rm;
+  J_genes["rhesus"]["IGHJ2*01"]=H_J2_1_rm;
+  J_genes["rhesus"]["IGHJ6*01"]=H_J6_1_rm;
+
+  J_genes["rhesus"]["IGKJ1-1*01"]=K_J1_1_1_rm;
+  J_genes["rhesus"]["IGKJ2-1*01"]=K_J2_1_1_rm;
+  J_genes["rhesus"]["IGKJ3-1*01"]=K_J3_1_1_rm;
+  J_genes["rhesus"]["IGKJ4-1*01"]=K_J4_1_1_rm;
+  J_genes["rhesus"]["IGKJ5-1*01"]=K_J5_1_1_rm;
+
+  map<string, map<string, bool> > J_genes_too_long;
+  J_genes_too_long["human"]["IGHJ1*01"]=true;
+  J_genes_too_long["human"]["IGHJ2*01"]=true;
+  J_genes_too_long["human"]["IGHJ3*01"]=true;
+  J_genes_too_long["human"]["IGHJ3*02"]=true;
+  J_genes_too_long["human"]["IGHJ4*01"]=true;
+  J_genes_too_long["human"]["IGHJ4*02"]=true;
+  J_genes_too_long["human"]["IGHJ4*03"]=true;
+  J_genes_too_long["human"]["IGHJ5*01"]=true;
+  J_genes_too_long["human"]["IGHJ5*02"]=true;
+  J_genes_too_long["human"]["IGHJ6*01"]=true;
+  J_genes_too_long["human"]["IGHJ6*02"]=false;
+  J_genes_too_long["human"]["IGHJ6*03"]=false;
+  J_genes_too_long["human"]["IGHJ6*04"]=true;
+
+  J_genes_too_long["rhesus"]["IGHJ4*01"]=true;
+  J_genes_too_long["rhesus"]["IGHJ3*01"]=true;
+  J_genes_too_long["rhesus"]["IGHJ5-1*01"]=true;
+  J_genes_too_long["rhesus"]["IGHJ5-1*02"]=true;
+  J_genes_too_long["rhesus"]["IGHJ5-2*01"]=true;
+  J_genes_too_long["rhesus"]["IGHJ1*01"]=true;
+  J_genes_too_long["rhesus"]["IGHJ2*01"]=true;
+  J_genes_too_long["rhesus"]["IGHJ6*01"]=true;
+
+  J_genes_too_long["rhesus"]["IGKJ1-1*01"]=true;
+  J_genes_too_long["rhesus"]["IGKJ2-1*01"]=true;
+  J_genes_too_long["rhesus"]["IGKJ3-1*01"]=true;
+  J_genes_too_long["rhesus"]["IGKJ4-1*01"]=true;
+  J_genes_too_long["rhesus"]["IGKJ5-1*01"]=true;
+
+  J_genes_too_long["human"]["IGKJ1*01"]=true;
+  J_genes_too_long["human"]["IGKJ3*01"]=true;
+  J_genes_too_long["human"]["IGKJ4*01"]=true;
+  J_genes_too_long["human"]["IGKJ5*01"]=true;
+  J_genes_too_long["human"]["IGKJ2*01"]=true;
+
+  J_genes_too_long["human"]["IGLJ1*01"]=true;
+  J_genes_too_long["human"]["IGLJ2*01"]=true;
+  J_genes_too_long["human"]["IGLJ3*02"]=true;
+  J_genes_too_long["human"]["IGLJ6*01"]=true;
+  J_genes_too_long["human"]["IGLJ7*01"]=true;
+  J_genes_too_long["human"]["IGLJ7*02"]=true;
+
+  vector<string> tokens;
+  tokenize(markup_header,tokens,"|");
+
+  if ((chain_type=="heavy")&&(tokens[tokens.size()-1].substr(0,4) != "IGHJ")){cerr << "SMUA file is incorrectly formatted, missing J gene name in markup header\n"; error_status=true; return;}
+  if ((chain_type=="kappa")&&(tokens[tokens.size()-1].substr(0,4) != "IGKJ")){cerr << "SMUA file is incorrectly formatted, missing J gene name in markup header\n"; error_status=true; return;}
+  if ((chain_type=="lambda")&&(tokens[tokens.size()-1].substr(0,4) != "IGLJ")){cerr << "SMUA file is incorrectly formatted, missing J gene name in markup header\n"; error_status=true; return;}
+
+  string J_gene_name=tokens[tokens.size()-1];
+
+  string J_gene_sequence=J_genes[species][J_gene_name];
+  //make sure the last 10 chars in UCA sequence match the last 10 chars in J gene
+  bool UCA_matches_J10=true;
+  int UCA_len=UCA_sequence.length();
+  int j=J_gene_sequence.length()-1;
+  for(int i=UCA_len-1; i>UCA_len-1-10; i--)
+    {
+      if (UCA_sequence[i] != J_gene_sequence[j]){UCA_matches_J10=false;}
+      j--;
+    }
+  if (!UCA_matches_J10){cerr << "UCA does not match J gene sequence for " <<  J_gene_name << " in last 10 bases!\n";}
+
+  // trim off the one base overhang when J overextends past last codon
+  int trim_end=UCA_len-1;
+  int seq_end=sequence.length()-1;
+  int markup_end=markup.length()-1;
+
+  if (J_genes_too_long[species][J_gene_name]){trim_end--; }
+  new_UCA_sequence=UCA_sequence.substr(0,trim_end+1);
+  new_sequence=sequence.substr(0,trim_end+1);
+  new_markup=markup.substr(0,trim_end+1);
+
+  //fill in end gaps with UCA sequence
+  for(int i=new_sequence.length()-1; i>=0; i--)
+    {
+      if (new_sequence[i]!='-'){break;}
+      new_sequence[i]=new_UCA_sequence[i];
+      if (new_markup[i]=='U'){new_markup[i]='4';}
+      number_of_replacements++;
+    }
+
+  //deal with indels if there are any
+  bool indels_present=false;
+  for(int i=0; i<new_sequence.length(); i++)
+    {
+      if ((new_sequence[i] == '-') || (new_UCA_sequence[i]=='-')){indels_present=true;}
+    }
+
+  if (sequence_has_ambiguities(new_sequence)){cerr << "ERROR: " << sequence_name << " has ambiguities, cannot proceed\n"; error_status=true; return;}
+  if (indels_present == false){return;} //no indels, we're done
+
+  //for now trust that Cloanalyst makes accurate alignments
+  //the rest assumes that the UCA sequence starts in frame 1
+  //INSERTION IN OBS
+  for(int i=1; i<new_UCA_sequence.length()-1; i++)
+    {
+      //Fix such that gaps cover codons without overhang
+      if ((new_UCA_sequence[i]=='-')&&(new_UCA_sequence[i-1]!='-'))
+	{
+	  int gap_start=i;
+	  int j=i;
+	  while(j<new_UCA_sequence.length())
+	    {
+	      if (new_UCA_sequence[j]=='-'){j++;}
+	      else{break;}
+	    }
+	  int gap_end=j-1;
+	  int gap_length=gap_end-gap_start+1;
+	  if (gap_length%3!=0){cerr << "ERROR1: " << sequence_name << " has gap at " << gap_start << " which is not multiple of 3\n"; error_status=true; return;}
+
+	  int frame_of_gap=gap_start%3;
+	  if (frame_of_gap==0){continue;}
+	  else if (frame_of_gap==1) //shift 3' base to right
+	    {
+	      char NU_hold=new_UCA_sequence[gap_start-1];
+	      char NM_hold=new_markup[gap_start-1];
+	      new_UCA_sequence[gap_start-1]='-';
+	      new_markup[gap_start-1]='-';
+	      new_UCA_sequence[gap_end]=NU_hold;
+	      new_markup[gap_end]=NM_hold;
+	    }
+	  else if (frame_of_gap==2) //shift 5' base to left
+	    {
+	      char NU_hold=new_UCA_sequence[gap_end+1];
+	      char NM_hold=new_markup[gap_end+1];
+	      new_UCA_sequence[gap_end+1]='-';
+	      new_markup[gap_end+1]='-';
+	      new_UCA_sequence[gap_start]=NU_hold;
+	      new_markup[gap_start]=NM_hold;
+	    }
+	}
+    }
+
+   //DELETION IN OBS
+  for(int i=1; i<new_sequence.length()-1; i++)
+    {
+      //Fix such that gaps cover codons without overhang
+      if ((new_sequence[i]=='-')&&(new_sequence[i-1]!='-'))
+	{
+	  int gap_start=i;
+	  int j=i;
+	  while(j<new_sequence.length())
+	    {
+	      if (new_sequence[j]=='-'){j++;}
+	      else{break;}
+	    }
+	  int gap_end=j-1;
+	  int gap_length=gap_end-gap_start+1;
+	  if (gap_length%3!=0){cerr << "ERROR2: " << sequence_name << " has gap at " << gap_start << " which is not multiple of 3\n"; error_status=true; return;}
+
+	  int frame_of_gap=gap_start%3;
+	  if (frame_of_gap==0){continue;}
+	  else if (frame_of_gap==1) //shift 3' base to right
+	    {
+	      char NU_hold=new_sequence[gap_start-1];
+	      new_sequence[gap_start-1]='-';
+	      new_sequence[gap_end]=NU_hold;
+	    }
+	  else if (frame_of_gap==2) //shift 5' base to left
+	    {
+	      char NU_hold=new_sequence[gap_end+1];
+	      char NM_hold=new_markup[gap_end+1];
+	      new_sequence[gap_end+1]='-';
+	      new_sequence[gap_start]=NU_hold;
+	    }
+	}
+    }
+
+  return;
+
+
+}
+
+bool sequence_has_ambiguities(string sequence)
+{
+  for(int i=0; i<sequence.length(); i++)
+    {
+      if ((sequence[i]!='A')&&(sequence[i]!='C')&&(sequence[i]!='T')&&(sequence[i]!='G')&&(sequence[i]!='-')){ return true;}
+    }
+  return false;
+}
+
+void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter)
+{
+
+  //RULER
+  HTML::Tr ruler1_row, ruler2_row;
+  HTML::Td ruler1("ruler","","","","");
+  HTML::Td ruler2("ruler","","","","");
+  ruler1_row.cols.push_back(ruler1);
+  ruler2_row.cols.push_back(ruler2);
+
+  if (v2.size()==0){cerr << "No data for HTML table. Exiting\n"; exit(1);}
+  for(int j=0; j<v2[0].size(); j++) ///iterate over cols
+    {
+      ruler1.value="";
+      ruler2.value="";
+      if ((counter+j)%10==0)
+	{
+	  ostringstream s;
+	  s<<counter+j;
+	  ruler1.value=s.str();
+	  ruler2.value="|";
+	}
+      else if ((counter+j)%5==0){ruler2.value="|";}
+      ruler1_row.cols.push_back(ruler1);
+      ruler2_row.cols.push_back(ruler2);
+    }
+  counter+=v2[0].size();
+
+  html_table.rows.push_back(ruler1_row);
+  html_table.rows.push_back(ruler2_row);
+
+  //REST OF ROWS
+  for(int i=0; i<v2.size(); i++) ///iterate over rows
+    {
+      HTML::Tr row1, cdr_row, spacer_row;
+
+      //string str0="this";
+      HTML::Td td0("seq_name","","","",names[i]);
+      HTML::Td blank("noborder","","","","");
+
+      row1.cols.push_back(td0);
+      cdr_row.cols.push_back(blank);
+      spacer_row.cols.push_back(blank);
+
+      for(int j=0; j<v2[i].size(); j++) ///iterate over cols
+	{
+	  string str1="<div class=\"sm\">"+v2[i][j].aa+"</div>"; //
+	  HTML::Td td1("","","","",str1);
+	  HTML::Td td_cdr("noborder","","","","");
+	  HTML::Td spacer("spacer","","","","");
+	  //assign category for coloring
+	  for(int k=0; k<color_ladder.size(); k++)
+	    {
+	      if (v2[i][j].simulated_aa_positional_frequency <= color_ladder[k])
+		{
+		  ostringstream ss;
+		  ss << "color_cat" << k+1;
+		  td1.hclass=ss.str();
+		  break;
+		}
+	    }
+	  if (v2[i][j].aa=="Z"){td1.hclass="noborder"; td1.value="";}
+	  if ((v2[i][j].CDR_markup=="1")||(v2[i][j].CDR_markup=="2")||(v2[i][j].CDR_markup=="3")){td_cdr.hclass="CDR";}
+	  if (v2[i][j].isMut){td1.hclass+=" mut";}
+
+	  row1.cols.push_back(td1); //row 1: amino acid
+	  cdr_row.cols.push_back(td_cdr); //row 0 CDR line
+	  spacer_row.cols.push_back(spacer);//row 2 spacer line
+	}
+
+      //collapse cdr row elements
+      for(int j=0; j<cdr_row.cols.size(); j++)
+	{
+	  if ( (((j==0)&&cdr_row.cols[j].hclass=="CDR")) || ((j>0)&&(cdr_row.cols[j-1].hclass!="CDR")&&(cdr_row.cols[j].hclass=="CDR"))    ) //start of CDR
+	    {
+	      int cdr_start=j;
+	      int k=j;
+	      while ((cdr_row.cols[k].hclass=="CDR")&&(k<cdr_row.cols.size()))
+		{
+		  k++;
+		}
+	      int cdr_end=k-1;
+	      //cerr << cdr_start << "\t" << cdr_end << "\n";
+	      // int d; cin >> d;
+	      ostringstream s;
+	      s<<cdr_end-cdr_start+1;
+	      cdr_row.cols[cdr_start].colspan=s.str();
+	      if (cdr_end-cdr_start>=1){
+		cdr_row.cols.erase(cdr_row.cols.begin()+cdr_start+1, cdr_row.cols.begin()+cdr_end+1);}
+
+	    }
+	}
+
+      html_table.rows.push_back(cdr_row);
+      html_table.rows.push_back(row1);
+      html_table.rows.push_back(spacer_row);
+    }
+
+  return;
+}
+
+void replace_UCA_sequence_in_SMUA(string old_obs_sequence, string old_uca_sequence, string old_markup_string, string input_uca_sequence, string &new_obs_sequence, string &new_uca_sequence, string &new_markup_string)
+{
+  map<char,map<char,int> > scoring_matrix;
+  load_EDNAFULL_matrix(scoring_matrix);
+  double gap_open=-10, gap_extend=-1, score=0;
+  string alignment_input_uca_sequence, alignment_old_uca_sequence;
+  pairwise_align_sequences_semiglobal_w_affine_gap(scoring_matrix, input_uca_sequence, old_uca_sequence, gap_open, gap_extend, alignment_input_uca_sequence, alignment_old_uca_sequence, score);
+
+  string status="no_indel";
+  for(int i=0; i<alignment_input_uca_sequence.length(); i++)
+    {
+      if (alignment_input_uca_sequence[i]=='-'){status="new_del";}
+      if (alignment_old_uca_sequence[i]=='-'){status="new_ins";}
+    }
+
+  //vector of the three strings to keep track of indels
+  vector<vector<string> > SMUA_alignment, new_SMUA_alignment;
+  for(int i=0; i<old_obs_sequence.length(); i++)
+    {
+      vector<string> temp;
+      temp.push_back(string(1,old_obs_sequence[i]));
+      temp.push_back(string(1,old_uca_sequence[i]));
+      temp.push_back(string(1,old_markup_string[i]));
+      SMUA_alignment.push_back(temp);
+    }
+
+  if (status=="no_indel")
+    {
+      new_uca_sequence = input_uca_sequence;
+      new_markup_string = old_markup_string;
+    }
+  else //indels are present
+    {
+      cout << "NEW UCA ALERT: INDEL DETECTED RELATIVE TO OLD UCA. MANUAL CHECK IS ADVISED!\n";
+      cout << "ALIGN\n" << alignment_input_uca_sequence << "\n" << alignment_old_uca_sequence << "\nEND\n";
+      cout << "PRESS ANY KEY TO CONTINUE\n";
+      int d; cin >>d;
+      int SMUA_counter=0;
+      for(int i=0; i<alignment_old_uca_sequence.length(); i++)
+	{
+	  if (alignment_old_uca_sequence[i]=='-')//ins in new uca rel to old uca
+	    {
+	      int five_prime_non_gap=i-1;
+	      if (five_prime_non_gap<0){cerr << "ERROR GAP TO START, CAN'T REPLACE UCA\n";}
+	      int j=i;
+	      while(alignment_old_uca_sequence[j]=='-') //within ins
+		{
+		  vector<string> temp;
+		  temp.push_back("-");
+		  temp.push_back(string(1,alignment_input_uca_sequence[j]));
+		  temp.push_back(SMUA_alignment[five_prime_non_gap][2]); //just continue region from 5p call prior to insertion
+		  new_SMUA_alignment.push_back(temp);
+		  j++;
+		}
+	      i=j;
+	    }
+	  else if (alignment_input_uca_sequence[i]=='-')//del in new uca rel to old uca
+	    {
+	      SMUA_counter++;
+	      continue;
+	    }
+	  else
+	    {
+	      new_SMUA_alignment.push_back(SMUA_alignment[SMUA_counter]);
+	      SMUA_counter++;
+	    }
+	}
+      for(int i=0; i<new_SMUA_alignment.size(); i++)
+	{
+	  new_obs_sequence+=new_SMUA_alignment[i][0];
+	  new_uca_sequence+=new_SMUA_alignment[i][1];
+	  new_markup_string+=new_SMUA_alignment[i][2];
+	}
+    }
+  return;
 }
