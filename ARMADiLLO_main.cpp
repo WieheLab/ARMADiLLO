@@ -147,6 +147,7 @@ int main(int argc, char *argv[])
   bool lineage=false;
   bool estimate=false;
   bool quick=false;
+  bool resetARMOfile=false;
 
   int branches=1;
   while(i<argc)
@@ -193,10 +194,6 @@ int main(int argc, char *argv[])
 	{
 	  lineage=true;
 	  branches=atoi(next_arg.c_str());
-	}
-      if (arg == "-estimate" or arg == "-e")
-	{
-	  estimate=true;
 	}
       if (arg == "-mut_count")
 	{
@@ -265,22 +262,21 @@ int main(int argc, char *argv[])
       i++;
     }
   
-   if( SMUA_filename.size()<1)
+  if( SMUA_filename.size()<1 || !fexists(SMUA_filename))
      {
-       cout << "No SMUA file given\n";
+       cout << "Error in SMUA file\n";
        helpMenu();
      }
-   if(mutability_filename.size()<1)
+   if(mutability_filename.size()<1 || !fexists(mutability_filename))
      {
-       cout << "No mutability file given\n";
+       cout << "Error in mutability file\n";
        helpMenu();
      }
-   if(substitution_filename.size()<1)
+   if(substitution_filename.size()<1 || !fexists(substitution_filename))
      {
-       cout << "No substitution file given\n";
+       cout << "Error in substitution file\n";
        helpMenu();
      }
-
    
    cerr << "highlighting residues with less than " << low_prob_cutoff << " probability for mutation\n"; 
 
@@ -325,7 +321,7 @@ int main(int argc, char *argv[])
        sep = '\\';
 #endif
        string amoFile=direct+sep+"Freq_Table.amo";
-       if(fexists(amoFile))
+       if(fexists(amoFile) && !resetARMOfile)
 	 {
 	   clock_t begin=clock();
 	   std::ifstream infs(amoFile,std::ios::binary);
@@ -547,9 +543,8 @@ int main(int argc, char *argv[])
 	   string UCA_sequence_name1=markup_header.substr(found0,found2-found0);
 	   V_mut_count=round((mut_count*seq_V.length()/(sequence.length()-shield_counter)+V_mut_count*3)/4);
 	   string freq_table=UCA_sequence_name1+"_"+std::to_string(V_mut_count)+".freq_table.txt";
-	   cerr<<"Sequence name"<<markup_header<<'\n';
-	   cerr << "Chosen V frequency table"<<freq_table<<"\n";
-	   
+	   cerr<<"Sequence name "<<markup_header<<'\n';
+	   cerr << "Chosen V frequency table "<<freq_table<<"\n";
 	   string shift=UCA_aa_sequence;
 	   for (int i=0; i < UCA_aa_sequence.length(); i++){
 	     if (UCA_sequence[3*i]=='-' || UCA_sequence[3*i+1]=='-' || UCA_sequence[3*i+2]=='-')
@@ -581,11 +576,11 @@ int main(int argc, char *argv[])
 		   mature_mutant_positional_aa_freqs1[j][amino_acids[k]]=positional_aa_freqs1[j-cnt][amino_acids[k]];
 		 }
 	     }
-	   for(int j=0; j<seq_CDR3.length()/3; j++)
+	   for(int j=0; j<UCA_CDR3.length()/3; j++)
 	     {
 	       for(int k=0; k<amino_acids.size(); k++)
 		 {
-		   if (amino_acids[k]==seq_aa_CDR3[j])
+		   if (amino_acids[k]==UCA_aa_CDR3[j])
 		     {
 		       mature_mutant_positional_aa_freqs1[j+seq_V.length()/3][amino_acids[k]]=1.0;
 		     }
@@ -601,7 +596,6 @@ int main(int argc, char *argv[])
 	   J_mut_count=round((mut_count*seq_J.length()/(sequence.length()-shield_counter)+J_mut_count*3)/4);
 	   freq_table=UCA_sequence_name1+"_"+std::to_string(J_mut_count)+".freq_table.txt";
 	   cerr << "Chosen J frequency table:" << freq_table<<"\n";
-	   
 	   if (J_mut_count==0)
 	     {
 	       for(int j=0; j<UCA_J.length()/3; j++)
@@ -646,11 +640,17 @@ int main(int argc, char *argv[])
 	 }
        else 
 	 {
-	   if (ignore_CDR3)
+	   if (ignore_CDR3 && numbMutations<=0)
 	     {
 	       mut_count-=CDR3_mut_count;
 	       aa_mut_count-=CDR3_aa_mut_count;
 	       cerr << "ignoring " <<  CDR3_mut_count << " mutations\n" << UCA_CDR3 << "\n" << seq_CDR3 << "\n";
+	     }
+	   else if (ignore_CDR3 && numbMutations>0)
+	     {
+	       mut_count=numbMutations;
+	       aa_mut_count-=CDR3_aa_mut_count;
+	       //cerr << "ignoring " <<  CDR3_mut_count << " mutations\n" << UCA_CDR3 << "\n" << seq_CDR3 << "\n";
 	     }
 	 }
        cerr << "processing " << sequence_name << " which has  " << mut_count << " mutations\n"; 
@@ -672,24 +672,21 @@ int main(int argc, char *argv[])
 	   if (sequence[j] == '-'){deletion_count++;}
 	 }
 
-       //simulate maturation at mutation frequency = to observed
-       cerr << "Simulating maturation...\n"; 
-       //       vector<string> mature_mutant_sequences(max_iter);
-       string mature_mutant_sequences[max_iter*branches];
-       string DNA_mutant_sequences[max_iter*branches];
+       vector<string> mature_mutant_sequences;
+       vector<string> DNA_mutant_sequences;
+       //string mature_mutant_sequences[max_iter*branches];
+       //string DNA_mutant_sequences[max_iter*branches];
        map<int, map<char,double> > mature_mutant_positional_aa_freqs;
        vector<string> mutant_sequences;
        //vector<string> clonal_mutant_sequences;
        //map<int, map<char,double> > mature_mutant_positional_aa_freqs;
        if(quick==false)
 	 {
+	   //simulate maturation at mutation frequency = to observed
 	   stop_codon_count=0;
 	   vector<int> countStopCodons;
 	   int array_position=0;
-	   if(estimate)
-	     cerr << "Estimating maturation...\n";
-	   else
-	     cerr << "Simulating maturation...\n";
+	   cerr << "Simulating maturation...\n";
 	   for(int j=1; j<=max_iter; j++)
 	     {
 	       string _aa_sequence;
@@ -711,11 +708,12 @@ int main(int argc, char *argv[])
 		   int stopCounts=0;
 		   stopCounts=simulate_S5F_mutation(UCA_sequence, mut_count, S5F_5mers, gen, dis,true, mutant_sequences, ignore_CDR3, shield_mutations);
 		   countStopCodons.push_back(stopCounts);
-		   DNA_mutant_sequences[array_position]=mutant_sequences[mutant_sequences.size()-1];
+		   DNA_mutant_sequences.push_back(mutant_sequences[mutant_sequences.size()-1]);
 		   translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], _aa_sequence, 1, dna_to_aa_map);
 		   //	   mature_mutant_sequences[j-1]=aa_sequence2;
-		   mature_mutant_sequences[array_position]=_aa_sequence;
+		   mature_mutant_sequences.push_back(_aa_sequence);
 		   array_position++;
+
 		 }
 	     }
 
@@ -764,20 +762,19 @@ int main(int argc, char *argv[])
 		   mature_mutant_positional_aa_freqs[j][amino_acids[k]]=0;
 		 }
 	     }
-	   
-	   for(int j=0; j<max_iter*branches; j++)
+	   for(int j=0; j<mature_mutant_sequences.size(); j++)
 	     {
-	       //cout << ">mutant" << i+1 << "\n" << mature_mutant_sequences[i] << "\n"; 
-	       for(int k=0; k<mature_mutant_sequences[j].length(); k++)
+	       //cout << ">mutant" << i+1 << "\n" << mature_mutant_sequences[i] << "\n";
+	       for(int k=0; k<mature_mutant_sequences[j].size(); k++)
 		 {
-		   mature_mutant_positional_aa_freqs[k][mature_mutant_sequences[j][k]]+=(1/((double)max_iter*branches));
+		   mature_mutant_positional_aa_freqs[k][mature_mutant_sequences[j][k]]+=(1/((double)mature_mutant_sequences.size()));
 		 }
 	     }
 	 }
-       if (quick==true)
+       else if (quick==true)
 	 {
 	   mature_mutant_positional_aa_freqs=mature_mutant_positional_aa_freqs1;
-	   for(int j=0; j<UCA_CDR3.length()/3; j++)
+	   /*for(int j=0; j<UCA_CDR3.length()/3; j++)
 	     {
 	       for(int k=0; k<amino_acids.size(); k++)
 		 {
@@ -790,7 +787,7 @@ int main(int argc, char *argv[])
 		       mature_mutant_positional_aa_freqs[j+V_gene_counter/3][amino_acids[k]]=0.0;
 		     }
 		 }
-	     }
+		 }*/
 	   
 	   if (output_seqs)
 	     {
@@ -1566,8 +1563,6 @@ void vector2D_to_3D(vector<vector<Type> > &vector2D, int interval, vector<vector
   return;
 }
 
-
-
 void load_S5F_files(string mutability_filename, string substitution_filename, map<string, S5F_mut> &S5F_5mers)
 {
   //Open mutability CSV and read in
@@ -1617,7 +1612,6 @@ void load_S5F_files(string mutability_filename, string substitution_filename, ma
   
   return;
 }
-
 
 void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_markup)
 {
@@ -2215,7 +2209,6 @@ void read_V(const std::string & name, map<string,map<int, map<char,double> >>  &
 	 getline(ss,dummyline,',')>>W;
 	 getline(ss,dummyline,',')>>Y;
 	 
-	 
 	 mature_mutant_positional_aa_freqs[pos][amino_acids[0]]=A;
 	 mature_mutant_positional_aa_freqs[pos][amino_acids[1]]=C;
 	 mature_mutant_positional_aa_freqs[pos][amino_acids[2]]=D;
@@ -2341,7 +2334,8 @@ map<string, map<string, string> > J_genes_list()
   return J_genes;
 }
 
-bool fexists(const std::string& filename) {
+bool fexists(const std::string& filename)
+{
   std::ifstream ifile(filename.c_str());
   return (bool)ifile;
 }
