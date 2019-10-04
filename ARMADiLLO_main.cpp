@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
   bool estimate=false;
   bool quick=false;
   bool resetARMOfile=false;
-
+  string amoFile="";
   int branches=1;
   while(i<argc)
     {
@@ -177,6 +177,22 @@ int main(int argc, char *argv[])
 	{
 	  freq_dir=next_arg;
 	  quick=true;
+
+	  char sep = '/';
+          #ifdef _WIN32
+	  sep = '\\';
+          #endif
+          amoFile=freq_dir+sep+"Freq_Table.amo";
+	}
+      if(arg=="-amofile" or arg=="-amo_file")
+	{
+	  amoFile=next_arg;
+	  quick=true;
+	  if(!fexists(amoFile))
+	    {
+	      cout << amoFile<< " can not be found\n";
+	      exit(1);
+	    }
 	}
       if (arg == "-w")
 	{
@@ -259,6 +275,10 @@ int main(int argc, char *argv[])
 	  treefile=next_arg.c_str();
 	  read_treefile(treefile);
 	}
+      if(arg == "-resetAMO" or arg == "-resetamo")
+	{
+	  resetARMOfile=true;
+	}
       i++;
     }
   
@@ -316,11 +336,7 @@ int main(int argc, char *argv[])
    if (quick==true)
      {
        ignore_CDR3=true;
-       char sep = '/';
-#ifdef _WIN32
-       sep = '\\';
-#endif
-       string amoFile=direct+sep+"Freq_Table.amo";
+
        if(fexists(amoFile) && !resetARMOfile)
 	 {
 	   clock_t begin=clock();
