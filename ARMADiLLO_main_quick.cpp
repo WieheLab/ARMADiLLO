@@ -19,6 +19,7 @@
 //#include "boost/filesystem.hpp"
 #include <fstream>
 
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <thread>
@@ -521,7 +522,11 @@ int main(int argc, char *argv[])
             {
 
               if (amino_acids[k]==seq_aa_CDR3[j]) {
+                if (UCA_aa_CDR3[j]==seq_aa_CDR3[j]) {
                   mature_mutant_positional_aa_freqs1[j+seq_V.length()/3][amino_acids[k]]=1.0;
+                } else {
+                  mature_mutant_positional_aa_freqs1[j+seq_V.length()/3][amino_acids[k]]=0.0;
+                }
               } else {
                   mature_mutant_positional_aa_freqs1[j+seq_V.length()/3][amino_acids[k]]=0.0;
               }
@@ -561,7 +566,12 @@ int main(int argc, char *argv[])
         {
 
           if (amino_acids[k]==seq_aa_J[j]) {
+            if (UCA_aa_J[j]==seq_aa_J[j]) {
               mature_mutant_positional_aa_freqs1[j+J_start/3][amino_acids[k]]=1.0;
+            } else {
+              mature_mutant_positional_aa_freqs1[j+J_start/3][amino_acids[k]]=0.0;
+            }
+
           } else {
               mature_mutant_positional_aa_freqs1[j+J_start/3][amino_acids[k]]=0.0;
           }
@@ -690,24 +700,13 @@ if (quick==false) {
 	    file_out.close();
 	 }
 
-
- if (quick==true) {
+if (quick==true) {
 
     mature_mutant_positional_aa_freqs=mature_mutant_positional_aa_freqs1;
 
-
-       for(int j=0; j<UCA_CDR3.length()/3; j++)
-        {
-          for(int k=0; k<amino_acids.size(); k++) {
-             if (UCA_aa_CDR3[j]==seq_aa_CDR3[j]) {
-                 mature_mutant_positional_aa_freqs[j+V_gene_counter/3][amino_acids[k]]=1.0;
-             } else {
-                 mature_mutant_positional_aa_freqs[j+V_gene_counter/3][amino_acids[k]]=0.0;
-             }
-          }
-        }
-
   }
+
+
 
        ///annotate seq vector with positional aa freq
        for(int j=0; j<seq_vector.size(); j++) //per position
@@ -763,7 +762,6 @@ if (quick==false) {
 	   sequence_names.push_back(UCA_sequence_name);
 	   sequence_names.push_back(sequence_name);
 	   print_output(output_filename, all_sequences, sequence_names, line_wrap_length, low_prob_cutoff);
-
 	   ///print tiles as HTML
 	   for(int j=0; j<seq_vector.size(); j+=3)
 	     {
@@ -773,14 +771,17 @@ if (quick==false) {
 	       aa_UCA_seq_vector.push_back(UCA_seq_vector[j]);
 	       aa_seq_vector.push_back(seq_vector[j]);
 	     }
+
 	   vector<vector<Seq> > all_aa_sequences;
 	   vector<string> aa_sequence_names;
 	   all_aa_sequences.push_back(aa_UCA_seq_vector);
 	   all_aa_sequences.push_back(aa_seq_vector);
 	   aa_sequence_names.push_back("UCA");
 	   aa_sequence_names.push_back(sequence_name);
-	   print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
+//comment out the below line for running on linux, however, runs well without comment out on mac.
+	   //print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
 	 }
+
        string output_freq_table=sequence_name+".freq_table.txt";
        print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
 
@@ -800,6 +801,7 @@ void read_V(const std::string & name, map<string,map<int, map<char,double> >>  &
   //path p("/Users/yw328/Documents/My_Scripts/Kevin-prog/ARMADiLLO/freq_table");
   DIR *dpdf= opendir(name.c_str());
   struct dirent *epdf;
+  struct stat filestat;
   map<int, map<char,double> > mature_mutant_positional_aa_freqs1;
 
     clock_t begin=clock();
@@ -809,6 +811,10 @@ void read_V(const std::string & name, map<string,map<int, map<char,double> >>  &
      while ((epdf = readdir(dpdf))){
        map<int, map<char,double> > mature_mutant_positional_aa_freqs;
        string Vgen = name+'/'+ epdf->d_name;
+
+       if (stat( Vgen.c_str(), &filestat )) continue;
+       if (S_ISDIR( filestat.st_mode ))         continue;
+
        ifstream file(Vgen, std::ios::in );
        string dummyline;
 
@@ -893,11 +899,11 @@ void read_V(const std::string & name, map<string,map<int, map<char,double> >>  &
 
 
   }
-
+closedir(dpdf);
   clock_t end=clock();
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   cerr << "Reading in files took " << elapsed_secs << " to process\n";
-  closedir(dpdf);
+
   return ;
 }
 
@@ -910,6 +916,7 @@ void read_V(const std::string & name, map<string,map<int, map<char,double> >>  &
 
 void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder)
 {
+
   vector<vector<vector<Seq> > > split_all_sequences;
   vector2D_to_3D(all_sequences,line_wrap_length, split_all_sequences);
   ///output html header
@@ -930,8 +937,10 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
       HTML::Table html_table;
       html_table.hclass="results";
       //convert seq vector to html table
-      convert_2D_seq_vector_to_HTML_table_for_tiles_view(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff, color_ladder, counter);
-      //missing step: stylize the table
+      cerr<<"fei"<<i;
+	convert_2D_seq_vector_to_HTML_table_for_tiles_view(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff, color_ladder, counter);
+      cerr<<"fei1";
+	//missing step: stylize the table
 
       //print HTML tables
       html_table.print(file_string);
@@ -1253,13 +1262,7 @@ void simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_m
 	{
 	  mutant_sequences.push_back(sequence);
 	}
-      //end=clock();
-      //elapsed = double(end - begin);// / CLOCKS_PER_SEC;
-      //cerr << "THE REST: " << elapsed << "\n";
-      //cerr << "TOTAL: " << double(end - total_start); // / CLOCKS_PER_SEC << "\n";
-      //int d; cin >> d;
 
-          //cerr<<num_mutations<<", "<<sequence.length()<<"Yunfei\n";
     }
 
   return;
@@ -2160,7 +2163,8 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
       html_table.rows.push_back(cdr_row);
       html_table.rows.push_back(row1);
       html_table.rows.push_back(spacer_row);
-    }
+
+   }
 
   return;
 }

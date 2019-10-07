@@ -123,7 +123,7 @@ bool fexists(const std::string& filename);
 void helpMenu()
 {
   cout << "ARMADiLLO <arguments>\n";
-  cout << "USAGE: -SMUA [SMUA file] -freq_dir [V, J Frequency file directory] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
+  cout << "USAGE: -SMUA [SMUA file] -freq_dir [V, J Frequency file directory] --w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
   exit(1);
 
   return;
@@ -275,8 +275,9 @@ int main(int argc, char *argv[])
 	  treefile=next_arg.c_str();
 	  read_treefile(treefile);
 	}
-      if(arg == "-resetAMO" or arg == "-resetamo")
+      if(arg == "-resetamo" or arg == "-reset_amo" or arg == "-reload_amo")
 	{
+	  cout << "reseting AMO file\n";
 	  resetARMOfile=true;
 	}
       i++;
