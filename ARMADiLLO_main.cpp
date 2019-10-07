@@ -134,7 +134,6 @@ int main(int argc, char *argv[])
   if (argc <2){
     helpMenu();
   }
- 
   ///get cmdline args
   int i=0, line_wrap_length=60, max_iter=1000, mutation_count_from_cmdline=-1, replace_J_upto=0, random_seed=0;
   string fasta_filename="", mutability_filename="", substitution_filename="", SMUA_filename="", species="human", chain_type="heavy", input_UCA_sequence="";
@@ -298,7 +297,7 @@ int main(int argc, char *argv[])
        cout << "Error in substitution file\n";
        helpMenu();
      }
-   
+
    cerr << "highlighting residues with less than " << low_prob_cutoff << " probability for mutation\n"; 
 
    ///amino acids vector
@@ -331,7 +330,6 @@ int main(int argc, char *argv[])
    load_S5F_files(mutability_filename,substitution_filename, S5F_5mers);
 
    cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\tsum(log(P))\n";
-
    const std::string direct=freq_dir;
    map<string,map<int, map<char,double> >>  v_input;
    if (quick==true)
@@ -420,7 +418,7 @@ int main(int argc, char *argv[])
 	   file_out << ">" << sequence_name << "\n" << sequence << "\n>" << UCA_sequence_name << "\n" << UCA_sequence << "\n>" << markup_header <<  "\n" << markup_string << "\n";
 	   file_out.close();
 	 }
-       
+
        string output_filename;
        string tiles_output_filename;
        if (numbMutations>0)
@@ -437,7 +435,7 @@ int main(int argc, char *argv[])
        vector<bool> V_gene_mark(markup_string.length(), false);
        int V_gene_counter=0, J_gene_counter=0;
        string UCA_V="", seq_V="",UCA_J="", seq_J="",markup_string_V="",UCA_other="", seq_other="", markup_string_other="";
-       
+
        //read in V gene;
        if (quick==true) {
 	 //read_V(direct, v_input);
@@ -483,7 +481,7 @@ int main(int argc, char *argv[])
 	       shield_mutations_other[j]=false;
 	     }
 	 }
-       
+
        int J_start;
        J_start=shield_counter_other+V_gene_counter;
        J_gene_counter=sequence.length()-J_start;
@@ -508,7 +506,7 @@ int main(int argc, char *argv[])
 	       shield_mutations[j]=false; 
 	     }
 	 }
-       
+
        if (ignore_CDR3){cerr << "Shielding CDR3 from mutation. CDR3 has " << shield_counter << " bases, mutability zeroed out for these\n"; }
        int CDR3_length=shield_counter;
        
@@ -559,6 +557,7 @@ int main(int argc, char *argv[])
 	   
 	   string UCA_sequence_name1=markup_header.substr(found0,found2-found0);
 	   V_mut_count=round((mut_count*seq_V.length()/(sequence.length()-shield_counter)+V_mut_count*3)/4);
+	   //V_mut_count=round((mut_count*seq_V.length())/(sequence.length()-shield_counter));
 	   string freq_table=UCA_sequence_name1+"_"+std::to_string(V_mut_count)+".freq_table.txt";
 	   cerr<<"Sequence name "<<markup_header<<'\n';
 	   cerr << "Chosen V frequency table "<<freq_table<<"\n";
@@ -611,6 +610,7 @@ int main(int argc, char *argv[])
 	   found0=markup_header.find(str2);
 	   UCA_sequence_name1=markup_header.substr(found0,markup_header.length()-found0);
 	   J_mut_count=round((mut_count*seq_J.length()/(sequence.length()-shield_counter)+J_mut_count*3)/4);
+	   //J_mut_count=round((mut_count*seq_J.length())/(sequence.length()-shield_counter));
 	   freq_table=UCA_sequence_name1+"_"+std::to_string(J_mut_count)+".freq_table.txt";
 	   cerr << "Chosen J frequency table:" << freq_table<<"\n";
 	   if (J_mut_count==0)
