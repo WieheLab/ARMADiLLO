@@ -963,13 +963,16 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
       file_string+="<p></p>\n"; 
     }
 
-  file_string+="<p><td class=\"color_cat8\"><div class=\"sm\">Q</div></td>  ";
-  file_string+="<td class=\"color_cat8\"><div class=\"sm\">Q</div></td>  ";
-  file_string+="<td class=\"color_cat8\"><div class=\"sm\">Q</div></td>  ";
-  file_string+="<td class=\"color_cat8\"><div class=\"sm\">Q</div></td>  ";
-  file_string+="<td class=\"color_cat8\"><div class=\"sm\">Q</div></td></p>/n";
+  file_string+="<br><br><br>\n";
+  file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">20 - 10\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">10 - 2\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">2 - 1\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">1 - 0.1\%&nbsp;&nbsp;</td> ";
+  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">&lt;0.1\%</td></tr></table></p>\n";
   
-  file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
+  //file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
   file_string+="</body>\n</html>\n"; 
 
   ofstream file_out;

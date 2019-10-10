@@ -152,6 +152,12 @@ div.sm {
     width: 1em;
     text-align: center;
 }
+div.mm {
+/*  font-family: consolas*/
+    font-size: 16px;
+    width: 2em;
+    text-align: center;
+}
 
 /*
 div.seq_name{
