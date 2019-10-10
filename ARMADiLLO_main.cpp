@@ -1358,14 +1358,19 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
       
       for(int j=0; j<v2[i].size(); j++) ///iterate over cols
 	{
-	  HTML::Td td1("","","","3",v2[i][j].aa);
+	  if (v2[i][j].aa=="X")
+	    {
+	      v2[i][j].aa="-";
+	    }
+
+	    HTML::Td td1("","","","3",v2[i][j].aa);
+
 	  HTML::Td td2("","","","3",convert_to_string(v2[i][j].aa_num));
 
 	  char c_str[10];
 	  sprintf(c_str,"%.2f",v2[i][j].S5F_mut_score);
 	  string mut_score_str(c_str);
 	  if (v2[i][j].S5F_mut_score == -1){mut_score_str="N/A";}
-
 	  string str3="<div class=\"sm\">"+v2[i][j].base+"<br/>"+mut_score_str+"</div>"; //
 	  HTML::Td td3("","","","",str3);
 	  if (v2[i][j].S5F_mut_score>2){td3.hclass="highlighthotspot";}
@@ -1387,7 +1392,10 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
 	    }
 	  string pos_freq_str="<div class=\"tooltip\">"+pos_freq_num_str+"<span class=\"tooltiptext\">"+tooltip_table_str+"</span></div>";
 	  HTML::Td tdP1("","","","3",pos_freq_str);
-	  if ((v2[i][j].simulated_aa_positional_frequency<low_prob_cutoff)&&(v2[i][j].simulated_aa_positional_frequency!=-99.99)){tdP1.hclass="highlightaalowprob";}
+	  if ((v2[i][j].simulated_aa_positional_frequency<low_prob_cutoff)&&(v2[i][j].simulated_aa_positional_frequency!=-99.99))
+	    {
+	      tdP1.hclass="highlightaalowprob";
+	    }
 	  //if (v2[i][j].simulated_aa_positional_frequency<low_prob_cutoff){tdP1.hclass="highlightaalowprob";}
 	  HTML::Td tdF("absent","","","","");
 	  if (i>0) ///highlight aa/dna mutation
@@ -2081,7 +2089,11 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
 
       for(int j=0; j<v2[i].size(); j++) ///iterate over cols
 	{
-	  string str1="<div class=\"sm\">"+v2[i][j].aa+"</div>"; //
+	  string str1;
+	  if(v2[i][j].aa=="X")
+	    str1="<div class=\"sm\">&mdash;</div>"; //
+	  else
+	    str1="<div class=\"sm\">"+v2[i][j].aa+"</div>"; //
 	  HTML::Td td1("","","","",str1);
 	  HTML::Td td_cdr("noborder","","","","");
 	  HTML::Td spacer("spacer","","","","");
