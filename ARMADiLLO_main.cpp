@@ -963,6 +963,12 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
       file_string+="<p></p>\n"; 
     }
 
+  file_string+="<p><td class=\"color_cat8\"><div class=\"sm\">Q</div></td>  ";
+  file_string+="<td class=\"color_cat8\"><div class=\"sm\">Q</div></td>  ";
+  file_string+="<td class=\"color_cat8\"><div class=\"sm\">Q</div></td>  ";
+  file_string+="<td class=\"color_cat8\"><div class=\"sm\">Q</div></td>  ";
+  file_string+="<td class=\"color_cat8\"><div class=\"sm\">Q</div></td></p>/n";
+  
   file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
   file_string+="</body>\n</html>\n"; 
 
