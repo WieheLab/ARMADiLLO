@@ -123,7 +123,7 @@ bool fexists(const std::string& filename);
 void helpMenu()
 {
   cout << "ARMADiLLO <arguments>\n";
-  cout << "USAGE: -SMUA [SMUA file] -freq_dir [V, J Frequency file directory] --w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
+  cout << "USAGE: -SMUA [SMUA file] -freq_dir [V, J Frequency file directory] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
   exit(1);
 
   return;
@@ -965,12 +965,13 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
 
   file_string+="<br><br><br>\n";
   file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
-  file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">20 - 10\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">10 - 2\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">2 - 1\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">1 - 0.1\%&nbsp;&nbsp;</td> ";
-  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">&lt;0.1\%</td></tr></table></p>\n";
+  file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">20-10\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">10-2\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">2-1\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">1.0-0.1\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">0.10-0.01\%&nbsp;&nbsp;</td> ";
+  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";
   
   //file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
   file_string+="</body>\n</html>\n"; 
@@ -1372,14 +1373,17 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
 	      v2[i][j].aa="-";
 	    }
 
-	    HTML::Td td1("","","","3",v2[i][j].aa);
+	  HTML::Td td1("","","","3",v2[i][j].aa);
 
 	  HTML::Td td2("","","","3",convert_to_string(v2[i][j].aa_num));
 
 	  char c_str[10];
 	  sprintf(c_str,"%.2f",v2[i][j].S5F_mut_score);
 	  string mut_score_str(c_str);
-	  if (v2[i][j].S5F_mut_score == -1){mut_score_str="N/A";}
+	  if (v2[i][j].S5F_mut_score == -1)
+	    {
+	      mut_score_str="N/A";
+	    }
 	  string str3="<div class=\"sm\">"+v2[i][j].base+"<br/>"+mut_score_str+"</div>"; //
 	  HTML::Td td3("","","","",str3);
 	  if (v2[i][j].S5F_mut_score>2){td3.hclass="highlighthotspot";}
@@ -1409,23 +1413,37 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
 	  HTML::Td tdF("absent","","","","");
 	  if (i>0) ///highlight aa/dna mutation
 	    {
-	       if (v2[i][j].aa!=v2[0][j].aa){td1.hclass="highlightaamutation";}
+	       if (v2[i][j].aa!=v2[0][j].aa)
+		 {
+		   td1.hclass="highlightaamutation";
+		 }
 	       if (v2[i][j].base!=v2[0][j].base)//dna mutation
 		 {
 		   td3.style="color:#4d0000";
 		   if (i==v2.size()-1)
 		     {
-		       if ((v2[0][j].S5F_mut_score<.3)&&(v2[0][j].S5F_mut_score!=-1)){tdF.value="<img style='vertical-align:bottom' src='unusual.png' alt='Unsusual'/>";}
-		       
+		       if ((v2[0][j].S5F_mut_score<.3)&&(v2[0][j].S5F_mut_score!=-1))
+			 {
+			   tdF.value="<img style='vertical-align:bottom' src='unusual.png' alt='Unsusual'/>";
+			 }
 		     }
 		 }
 	    }
-	  if (j%3==0){row1.cols.push_back(td1);} //row 1: aa 
-	  if (j%3==0){row2.cols.push_back(td2);} //row 2: aa number
+	  if (j%3==0)
+	    {
+	      row1.cols.push_back(td1);
+	    } //row 1: aa 
+	  if (j%3==0)
+	    {
+	      row2.cols.push_back(td2);
+	    } //row 2: aa number
 	  row3.cols.push_back(td3); //row 3: base and mut score
 	  if (i==v2.size()-1)
 	    {
-	      if (j%3==0){penultimate_row.cols.push_back(tdP1);}//pen row: pos aa freq
+	      if (j%3==0)
+		{
+		  penultimate_row.cols.push_back(tdP1);
+		}//pen row: pos aa freq
 	      final_row.cols.push_back(tdF);
 	    } //final rows
 	}
@@ -2112,7 +2130,10 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
 	      if (v2[i][j].simulated_aa_positional_frequency <= color_ladder[k])
 		{
 		  ostringstream ss;
-		  ss << "color_cat" << k+1;
+		  if(v2[i][j].aa=="X")
+		    ss << "color_cat" << 8;
+		  else
+		    ss << "color_cat" << k+1;
 		  td1.hclass=ss.str();
 		  break;
 		}
@@ -2129,7 +2150,7 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
       //collapse cdr row elements
       for(int j=0; j<cdr_row.cols.size(); j++)
 	{
-	  if ( (((j==0)&&cdr_row.cols[j].hclass=="CDR")) || ((j>0)&&(cdr_row.cols[j-1].hclass!="CDR")&&(cdr_row.cols[j].hclass=="CDR"))    ) //start of CDR
+	  if ( (((j==0)&&cdr_row.cols[j].hclass=="CDR")) || ((j>0)&&(cdr_row.cols[j-1].hclass!="CDR")&&(cdr_row.cols[j].hclass=="CDR")) ) //start of CDR
 	    {
 	      int cdr_start=j;
 	      int k=j;
