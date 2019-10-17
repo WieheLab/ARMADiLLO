@@ -356,7 +356,6 @@ public:
     cerr << "Simulating maturation...\n";
     for(int j=1; j<=max_iter; j++)
       {
-	string _aa_sequence;
 	print_pct_progress(j, max_iter, 1);
 	if(lineage)
 	  {
@@ -364,6 +363,7 @@ public:
 	    simulate_S5F_lineage(UCA_sequence, branches,mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
 	    for(int i=0;i<mutant_sequences.size();i++)
 	      {
+		string _aa_sequence;
 		DNA_mutant_sequences.push_back(mutant_sequences[i]);
 		translate_dna_to_aa(mutant_sequences[i], _aa_sequence, 1, dna_to_aa_map);
 		//	   mature_mutant_sequences[j-1]=aa_sequence2;
@@ -373,6 +373,7 @@ public:
 	else
 	  {
 	    vector<string> mutant_sequences;
+	    string _aa_sequence;
 	    int stopCounts=0;
 	    stopCounts=simulate_S5F_mutation(UCA_sequence, mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
 	    countStopCodons.push_back(stopCounts);
