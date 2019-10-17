@@ -51,7 +51,8 @@ public:
   string UCA_seq_name,Vgene,Dgene,Jgene;
   int cdr_length=0,Vgene_length=0,Jgene_length=0;
   map<int, map<char,double> > mature_mutant_positional_aa_freqs;
-  int mut_count=0,Vgene_mut_count=0,Jgene_mut_count=0,CDR3_mut_count=0,insertion_count=0, deletion_count=0;
+  int mut_count=0,Vgene_mut_count=0,Jgene_mut_count=0,CDR3_mut_count=0;//mutations counts for all and for the pieces
+  int insertion_count=0, deletion_count=0;//insertion and deletion counts
   vector<string> mature_mutant_sequences;
   vector<string> DNA_mutant_sequences;
   vector<string> markup_mask;
@@ -344,10 +345,6 @@ public:
 
   void SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
   {
-    //bool ignore_CDR3=true;
-    //bool lineage=false;
-    vector<string> mutant_sequences;
-    
     if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence))
       {
 	cerr << "germline has stop codon...skipping this sequence\n"; 
@@ -356,7 +353,6 @@ public:
       }
     int stop_codon_count=0;
     vector<int> countStopCodons;
-    int array_position=0;
     cerr << "Simulating maturation...\n";
     for(int j=1; j<=max_iter; j++)
       {
@@ -364,6 +360,7 @@ public:
 	print_pct_progress(j, max_iter, 1);
 	if(lineage)
 	  {
+	    vector<string> mutant_sequences;
 	    simulate_S5F_lineage(UCA_sequence, branches,mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
 	    for(int i=0;i<mutant_sequences.size();i++)
 	      {
@@ -371,11 +368,11 @@ public:
 		translate_dna_to_aa(mutant_sequences[i], _aa_sequence, 1, dna_to_aa_map);
 		//	   mature_mutant_sequences[j-1]=aa_sequence2;
 		mature_mutant_sequences.push_back(_aa_sequence);
-		array_position++;
 	      }
 	  }
 	else
 	  {
+	    vector<string> mutant_sequences;
 	    int stopCounts=0;
 	    stopCounts=simulate_S5F_mutation(UCA_sequence, mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
 	    countStopCodons.push_back(stopCounts);
@@ -383,7 +380,6 @@ public:
 	    translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], _aa_sequence, 1, dna_to_aa_map);
 	    //	   mature_mutant_sequences[j-1]=aa_sequence2;
 	    mature_mutant_sequences.push_back(_aa_sequence);
-	    array_position++;
 	  }
       }
     cerr << "STOP CODON #: " << stop_codon_count << "\n"; 
@@ -801,6 +797,8 @@ int main(int argc, char *argv[])
        if(quick)
 	 {
 	   nab.replaceTable(dna_to_aa_map, v_input);
+	   if(output_seqs)//write out simulated sequences if argument is true
+	     cerr << "No sequences generated during quick generations\n";
 	 }
        else
 	 {
@@ -1080,22 +1078,12 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
   int stop_codon_count=0;
   for(int j=1; j<=num_mutations; j++)
     {
-      ///get mutability scores  
-      //clock_t begin, end, total_start; double elapsed;
-      //begin=clock();
-      //total_start=begin;
-
       vector<double> mut_scores(sequence.length(), 0.0);
       double sum_mut_scores=0;
       get_mutability_scores(S5F_model, sequence, last_mutate_position, is_shielded, shield_mutations, last_mut_scores, mut_scores, last_sum_mut_scores, sum_mut_scores);
       last_mut_scores=mut_scores;
       last_sum_mut_scores=sum_mut_scores;
 
-      //end=clock();
-      //elapsed = double(end - begin);// / CLOCKS_PER_SEC;
-      //cerr << "S5F SCORING: " << elapsed << "\n";
-      //begin=clock();
-       //check
       if(mut_scores.size() != shield_mutations.size()){cerr << "FATAL ERROR: shield mutations vector is not same size as mut_scores. Exiting\n"; exit(1);} 
       // cerr << j << "\tsum of mut scores: " << sum_mut_scores << "\n"; 
       ///convert mutability scores to probability of mutating position  
@@ -1215,11 +1203,8 @@ void simulate_S5F_lineage(string sequence, int number_branches, int &num_mutatio
   vector<string> clonal_lineage;
   int mutation_count;
   int new_num_mutations;
-  string fred;
-      
   simulate_S5F_mutation(sequence, num_mutations, S5F_model, gen, dis,kill_stop_seqs, clonal_lineage, is_shielded, shield_mutations);
   clonal_sequences.push_back(clonal_lineage.back());
-  
   for(int k=1;k<=number_branches-1;k++)
     {
       vector<int> mutation_count_vect;
@@ -1230,9 +1215,9 @@ void simulate_S5F_lineage(string sequence, int number_branches, int &num_mutatio
 	  number_of_mutations_two_seqs(sequence,clonal_lineage[i],mutation_count);
 	  mutation_count_vect.push_back(mutation_count);
 	}
-	uniform_int_distribution<int> distribution(2,mutation_count-1);
-	int vect=distribution(gen);	  	
-	for(int i=0;i<mutation_count_vect.size();i++)
+      uniform_int_distribution<int> distribution(2,mutation_count-1);
+      int vect=distribution(gen);
+      for(int i=0;i<mutation_count_vect.size();i++)
 	{
 	  if(mutation_count_vect[i]==vect)
 	    {
@@ -1246,7 +1231,6 @@ void simulate_S5F_lineage(string sequence, int number_branches, int &num_mutatio
       simulate_S5F_mutation(new_seq, new_num_mutations, S5F_model, gen, dis,kill_stop_seqs, clonal_lineage, is_shielded, shield_mutations);
       clonal_sequences.push_back(clonal_lineage.back());
     }
-
 }
 
 void number_of_mutations_two_seqs(string &s1, string &s2, int &mutation_count)
