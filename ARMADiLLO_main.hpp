@@ -77,6 +77,25 @@ public:
   }
 };
 
+struct Arguments
+{
+  bool ignore_CDR3=false;
+  bool ignoreV=false;
+  bool ignoreJ=false;
+  bool quick=false;
+  string species="human";
+  string chain_type="heavy";
+  string input_UCA_sequence="";
+  vector<double> color_ladder{0.0001, 0.001, 0.01, 0.02, 0.10, 0.20, 0.5, 1};
+  int numbMutations=-1;
+  double low_prob_cutoff=.02;
+  bool clean_SMUA_first=false, remutate=false, output_seqs=false, ignore_warnings=false;
+  bool lineage=false;
+  int branches=1;
+  int line_wrap_length=60, max_iter=1000,replace_J_upto=0;
+  std::mt19937 gen;
+  std::uniform_real_distribution<double> dis;
+};
 
 void process_fasta_sequence_to_seq_vector(string &,vector<Seq> &, map<string,string> &, map<string,S5F_mut> &);
 void process_SMUA_sequence_to_seq_vector(string &, string &, vector<Seq> &, map<string,string> &, map<string, S5F_mut> &);
@@ -113,3 +132,6 @@ template <typename Type>
 string convert_to_string(Type);
 map<string, map<string, string> > J_genes_list();
 bool fexists(const std::string& filename);
+void run_entry(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &);//function to run the entry object to generate simulations
+
+  

@@ -13,16 +13,16 @@
 #include <boost/algorithm/string.hpp>
 #include "HTML.hpp"
 #include "utilities.hpp"
-#include <algorithm>
+//#include <algorithm>
 #include <boost/filesystem/operations.hpp>
 //#include "boost/filesystem.hpp"
 #include <sys/types.h>
-#include <dirent.h>
+//#include <dirent.h>
 #include <thread>
 #include <mutex>
 //#include <boost/filesystem/fstream.hpp>
 //#define BOOST_FILESYSTEM_NO_DEPRECATED
-#include <boost/optional.hpp>
+//#include <boost/optional.hpp>
 // include headers that implement a archive in simple text format
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -32,7 +32,6 @@
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
-
 
 class NabEntry//class for collecting and doing the sequences
 {
@@ -353,10 +352,10 @@ public:
       }
     int stop_codon_count=0;
     vector<int> countStopCodons;
-    cerr << "Simulating maturation...\n";
+    cerr << "Simulating maturation of "<<sequence_name<<"\n";
     for(int j=1; j<=max_iter; j++)
       {
-	print_pct_progress(j, max_iter, 1);
+	//print_pct_progress(j, max_iter, 1);
 	if(lineage)
 	  {
 	    vector<string> mutant_sequences;
@@ -383,7 +382,7 @@ public:
 	    mature_mutant_sequences.push_back(_aa_sequence);
 	  }
       }
-    cerr << "STOP CODON #: " << stop_codon_count << "\n"; 
+    //cerr << "STOP CODON #: " << stop_codon_count << "\n"; 
     //cerr << "done\n";
     ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
     ///init map to 0
@@ -543,21 +542,19 @@ int main(int argc, char *argv[])
     helpMenu();
   }
   ///get cmdline args
-  int i=0, line_wrap_length=60, max_iter=1000, mutation_count_from_cmdline=-1, replace_J_upto=0, random_seed=0;
-  string fasta_filename="", mutability_filename="", substitution_filename="", SMUA_filename="", species="human", chain_type="heavy", input_UCA_sequence="";
+  int i=0, mutation_count_from_cmdline=-1, random_seed=0;
+  string fasta_filename="", mutability_filename="", substitution_filename="", SMUA_filename="";
   string treefile="";
   int SMUA_start=0, SMUA_end=-1;
-  int numbMutations=-1;
-  double low_prob_cutoff=.02;
   string freq_dir="";
-  bool ignore_CDR3=false,ignoreV=false,ignoreJ=false;
-  bool clean_SMUA_first=false, user_provided_random_seed=false, remutate=false, output_seqs=false, ignore_warnings=false;
-  bool lineage=false;
-  bool estimate=false;
-  bool quick=false;
+  //  bool ignore_CDR3=false,ignoreV=false,ignoreJ=false;
   bool resetARMOfile=false;
+  bool user_provided_random_seed=false;
   string amoFile="";
-  int branches=1;
+
+  int num_threads=0, max_num_threads=thread::hardware_concurrency();
+  bool estimate=false;
+  Arguments arguments;
   while(i<argc)
     {
       string arg=argv[i];
@@ -584,7 +581,7 @@ int main(int argc, char *argv[])
       if (arg == "-freq_dir")
 	{
 	  freq_dir=next_arg;
-	  quick=true;
+	  arguments.quick=true;
 
 	  char sep = '/';
           #ifdef _WIN32
@@ -595,7 +592,7 @@ int main(int argc, char *argv[])
       if(arg=="-amofile" or arg=="-amo_file")
 	{
 	  amoFile=next_arg;
-	  quick=true;
+	  arguments.quick=true;
 	  if(!fexists(amoFile))
 	    {
 	      cout << amoFile<< " can not be found\n";
@@ -604,20 +601,20 @@ int main(int argc, char *argv[])
 	}
       if (arg == "-w")
 	{
-	  line_wrap_length=atoi(next_arg.c_str());
+	  arguments.line_wrap_length=atoi(next_arg.c_str());
 	}
       if (arg == "-max_iter")
 	{
-	  max_iter=atoi(next_arg.c_str());
+	  arguments.max_iter=atoi(next_arg.c_str());
 	}
       if (arg == "-number" or arg=="-n")
 	{
-	  numbMutations=atoi(next_arg.c_str());
+	  arguments.numbMutations=atoi(next_arg.c_str());
 	}
       if (arg == "-lineage" or arg == "-l")
 	{
-	  lineage=true;
-	  branches=atoi(next_arg.c_str());
+	  arguments.lineage=true;
+	  arguments.branches=atoi(next_arg.c_str());
 	}
       if (arg == "-mut_count")
 	{
@@ -626,19 +623,19 @@ int main(int argc, char *argv[])
 	}
       if (arg == "-c")
 	{
-	  low_prob_cutoff=atof(next_arg.c_str())/100.0;
+	  arguments.low_prob_cutoff=atof(next_arg.c_str())/100.0;
 	}
       if (arg == "-ignore_CDR3" || arg =="-ignoreCDR3")
         {
-          ignore_CDR3=true;
+          arguments.ignore_CDR3=true;
         }
       if(arg == "-ignoreJ" || arg=="-ignore_J")
         {
-          ignoreJ=true;
+          arguments.ignoreJ=true;
         }
       if(arg == "-ignoreV" || arg =="-ignore_V")
         {
-          ignoreV=true;
+          arguments.ignoreV=true;
         }
       if (arg == "-start")
 	{
@@ -650,24 +647,28 @@ int main(int argc, char *argv[])
 	}
       if (arg == "-replace_J_upto")
 	{
-	  replace_J_upto=atoi(next_arg.c_str());
+	  arguments.replace_J_upto=atoi(next_arg.c_str());
 	}
       if (arg == "-species")
 	{
-	  species=next_arg;
+	  arguments.species=next_arg;
 	}
       if (arg == "-chain")
 	{
-	  chain_type=next_arg; 
+	  arguments.chain_type=next_arg; 
 	}
       if (arg == "-clean_first")
 	{
-	  clean_SMUA_first=true;
+	  arguments.clean_SMUA_first=true;
 	}
       if (arg == "-random_seed")
 	{
 	  random_seed=atoi(next_arg.c_str());
 	  user_provided_random_seed=true;
+	}
+      if(arg == "-threads" || arg == "-num_threads")
+	{
+	  num_threads=atoi(next_arg.c_str());
 	}
       if (arg == "-remutate")
 	{
@@ -676,15 +677,15 @@ int main(int argc, char *argv[])
 	}
       if (arg == "-output_seqs")
 	{
-	  output_seqs=true;
+	  arguments.output_seqs=true;
 	}
       if (arg == "-UCA_sequence")
 	{
-	  input_UCA_sequence=next_arg;
+	  arguments.input_UCA_sequence=next_arg;
 	}
       if (arg == "-ignore_warnings")
 	{
-	  ignore_warnings=true;
+	  arguments.ignore_warnings=true;
 	}
       if(arg == "-tree" or arg == "-t")
 	{
@@ -714,8 +715,8 @@ int main(int argc, char *argv[])
        cout << "Error in substitution file\n";
        helpMenu();
      }
-
-   cerr << "highlighting residues with less than " << low_prob_cutoff << " probability for mutation\n"; 
+   if ((num_threads==0)||(num_threads>max_num_threads)){num_threads=max_num_threads;}
+   cerr << "highlighting residues with less than " << arguments.low_prob_cutoff << " probability for mutation\n"; 
 
    ///amino acids vector
    vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
@@ -729,10 +730,12 @@ int main(int argc, char *argv[])
      {seed=rd();}
    
    std::mt19937 gen(seed);
+   arguments.gen=gen;
    std::uniform_real_distribution<double> dis(0, 1);
+   arguments.dis=dis;
 
    //define color ladder
-   vector<double> color_ladder{0.0001, 0.001, 0.01, 0.02, 0.10, 0.20, 0.5, 1};
+   //vector<double> color_ladder{0.0001, 0.001, 0.01, 0.02, 0.10, 0.20, 0.5, 1};
    ///load dna_to_aa map
    map<string,string> dna_to_aa_map;
    get_aa_tranx_map(dna_to_aa_map);
@@ -749,9 +752,9 @@ int main(int argc, char *argv[])
    cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\tsum(log(P))\n";
    const std::string direct=freq_dir;
    map<string,map<int, map<char,double> >>  v_input;
-   if (quick==true)
+   if (arguments.quick==true)
      {
-       ignore_CDR3=true;
+       arguments.ignore_CDR3=true;
 
        if(fexists(amoFile) && !resetARMOfile)
 	 {
@@ -765,7 +768,6 @@ int main(int argc, char *argv[])
        else
 	 {     
 	   std::mutex mtx;
-	   ignore_CDR3=true;
 	   mtx.lock();
 	   read_V(direct, v_input);
 	   mtx.unlock();
@@ -776,45 +778,38 @@ int main(int argc, char *argv[])
      }
    map<string, map<string, string> > J_genes=J_genes_list();
    //iterate through the SMUA file and perform mutation analysis for each sequence
-   double total_elapsed_time=0;
+   //double total_elapsed_time=0;
    if (SMUA_end==-1){SMUA_end=SMUA_alignments_and_markup.size();}
    if (SMUA_end>SMUA_alignments_and_markup.size()){SMUA_end=SMUA_alignments_and_markup.size();}
    //for(int i=0; i<SMUA_alignments_and_markup.size(); i++)
-   vector <NabEntry> allEntries;
+   int MAX_THREADS=num_threads;
+   /*for(int i=SMUA_start; i<SMUA_end; i+=MAX_THREADS)
+     {
+       vector<thread> thread_list;
+       int number_of_threads=min(MAX_THREADS, SMUA_end-1);
+       for(int j=0; j<number_of_threads; j++)
+	 {
+	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments)));
+	 }
+       for(int j=0; j<number_of_threads; j++)
+	 {
+	   thread_list[j].join();
+	   }
+       //run_entry(S5F_5mers,dna_to_aa_map,SMUA_alignments_and_markup[i],v_input,arguments);
+       }*/
+   vector<thread> thread_list;
+   //int number_of_threads=min(MAX_THREADS, SMUA_end-1);
    for(int i=SMUA_start; i<SMUA_end; i++)
      {
-       clock_t begin=clock();
-       NabEntry nab(SMUA_alignments_and_markup[i],numbMutations);
-       if(clean_SMUA_first)
-	 {
-	   if (nab.cleanSMUA(species,chain_type,replace_J_upto)<0)
-	     continue;
-	 }
-       if(input_UCA_sequence!="")
-	 {
-	   nab.replaceUCA(dna_to_aa_map,input_UCA_sequence,ignore_warnings);
-	 }
-       nab.createShield(ignore_CDR3,ignoreV,ignoreJ);
-       if(quick)
-	 {
-	   nab.replaceTable(dna_to_aa_map, v_input);
-	   if(output_seqs)//write out simulated sequences if argument is true
-	     cerr << "No sequences generated during quick generations\n";
-	 }
-       else
-	 {
-	   nab.SimulateSequences(S5F_5mers,dna_to_aa_map,gen,dis,max_iter,branches,lineage);
-	   if(output_seqs)//write out simulated sequences if argument is true
-	     nab.outputSimSeqs(max_iter,branches);
-	 }
-       nab.printResults(S5F_5mers,dna_to_aa_map,line_wrap_length,low_prob_cutoff,color_ladder);
-       
-       clock_t end=clock();
-       double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-       cerr << "TIME: " << nab.sequence_name << " took " << elapsed_secs << " to process\n"; 
-       total_elapsed_time+=elapsed_secs;
+       thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i],std::ref(v_input),std::ref(arguments)));
+       //run_entry(S5F_5mers,dna_to_aa_map,SMUA_alignments_and_markup[i],v_input,arguments);
      }
-   cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
+   for(int i=SMUA_start; i<SMUA_end; i++)
+     {
+       if(thread_list[i].joinable())
+	 thread_list[i].join();
+     }
+   //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
 }
 
@@ -823,6 +818,41 @@ int main(int argc, char *argv[])
 ///                FUNCTION DEFINITIONS
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg)
+{
+  //double total_elapsed_time=0;
+  //clock_t begin=clock();
+  NabEntry nab(SMUA_entries,arg.numbMutations);
+  if(arg.clean_SMUA_first)
+    {
+      if (nab.cleanSMUA(arg.species,arg.chain_type,arg.replace_J_upto)<0)
+	return;
+    }
+  if(arg.input_UCA_sequence!="")
+    {
+      nab.replaceUCA(dna_to_aa_map,arg.input_UCA_sequence,arg.ignore_warnings);
+    }
+  nab.createShield(arg.ignore_CDR3,arg.ignoreV,arg.ignoreJ);
+  if(arg.quick)
+    {
+      nab.replaceTable(dna_to_aa_map, v_input);
+      if(arg.output_seqs)//write out simulated sequences if argument is true
+	cerr << "No sequences generated during quick generations\n";
+    }
+  else
+    {
+      nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
+      if(arg.output_seqs)//write out simulated sequences if argument is true
+	nab.outputSimSeqs(arg.max_iter,arg.branches);
+    }
+  nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+  //clock_t end=clock();
+  //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+  //cerr << "TIME: " << nab.sequence_name << " took " << elapsed_secs << " to process\n"; 
+  //total_elapsed_time+=elapsed_secs;
+  return;
+}
 
 void read_treefile(string treefile)
 {
@@ -2110,7 +2140,8 @@ void replace_UCA_sequence_in_SMUA(string old_obs_sequence, string old_uca_sequen
   return;
 }
 
-void read_V(const std::string & name, map<string,map<int, map<char,double> >>  & v_input) {
+void read_V(const std::string & name, map<string,map<int, map<char,double> >>  & v_input)
+{
   vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
   //path p("/Users/yw328/Documents/My_Scripts/Kevin-prog/ARMADiLLO/freq_table");
   DIR* dpdf= opendir(name.c_str());
