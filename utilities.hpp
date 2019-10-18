@@ -30,3 +30,7 @@ void parse_recombination_summaries_file(string, map<string, map<string, string> 
 void sequence_identity(string, string, double &, double &);
 void get_aa_tranx_map(map<string,string> &);
 void translate_dna_to_aa(string &, string &, int, map<string,string> &);
+bool fexists(const std::string& filename);
+
+void print_pct_progress(int, int, int);
+void number_of_mutations_two_seqs(string &, string &, int &);

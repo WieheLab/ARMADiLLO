@@ -586,3 +586,43 @@ void sequence_identity(string alignment_seq1, string alignment_seq2, double &ide
   identity=match_count/(double) total_count;
   return;
 }
+
+void number_of_mutations_two_seqs(string &s1, string &s2, int &mutation_count)
+{
+  ///Assumes sequences are already properly aligned
+  assert(s1.length()==s2.length());
+
+  mutation_count=0;
+  for(int i=0; i<s1.size(); i++)
+    {
+      if ((s1[i] == '-') || (s2[i] == '-')){continue;} ///Not counting gaps as mutations currently
+      if (s1[i] != s2[i]) {mutation_count++;}
+    }
+  return;
+}
+
+
+void print_pct_progress(int i, int size, int level)
+{
+  if (size<100){return;}
+  double a=size/(100*pow(10,level));
+  int b=1;
+  if (a>1){b=(int) a;}
+  if ((i%b)==0){cerr << setw(3) << fixed << setprecision(level) << (i/(double)size)*100.0 << "%\r" << flush;}
+  
+}
+
+bool sequence_has_ambiguities(string sequence)
+{
+  for(int i=0; i<sequence.length(); i++)
+    {
+      if ((sequence[i]!='A')&&(sequence[i]!='C')&&(sequence[i]!='T')&&(sequence[i]!='G')&&(sequence[i]!='-')){ return true;}
+    }
+  return false;
+}
+
+bool fexists(const std::string& filename)
+{
+  std::ifstream ifile(filename.c_str());
+  return (bool)ifile;
+}

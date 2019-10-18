@@ -1,4 +1,4 @@
-#ARMADiLLO_quick.make
+#ARMADiLLO make
 
 cxx=/usr/bin/g++
 flags=-ggdb -O3 -std=c++11
@@ -18,7 +18,7 @@ endif
 ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o
 	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o ${libs}
 
-ARMADiLLO_main.o: ARMADiLLO_main.cpp HTML.hpp utilities.hpp
+ARMADiLLO_main.o: ARMADiLLO_main.cpp ARMADiLLO_main.hpp HTML.hpp utilities.hpp
 	${cxx} ${flags} ${links} -c ARMADiLLO_main.cpp
 
 utilities.o: utilities.cpp utilities.hpp
