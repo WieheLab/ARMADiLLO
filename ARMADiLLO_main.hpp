@@ -99,10 +99,8 @@ struct Arguments
 
 void process_fasta_sequence_to_seq_vector(string &,vector<Seq> &, map<string,string> &, map<string,S5F_mut> &);
 void process_SMUA_sequence_to_seq_vector(string &, string &, vector<Seq> &, map<string,string> &, map<string, S5F_mut> &);
-void number_of_mutations_two_seqs(string &, string &, int &);
 int simulate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
 void simulate_S5F_lineage(string , int, int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
-void print_pct_progress(int, int, int);
 void print_output(string, vector<vector<Seq> > &, vector<string>, int, double);
 void print_output_for_tiles_view(string, vector<vector<Seq> > &, vector<string>, int, double, vector<double> &);
 void print_freq_table_to_file(string,  map<int, map<char,double> > &);
@@ -131,7 +129,7 @@ void vector1D_to_2D(vector<Type> &, int, vector<vector<Type> > &);
 template <typename Type>
 string convert_to_string(Type);
 map<string, map<string, string> > J_genes_list();
-bool fexists(const std::string& filename);
+
 void run_entry(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &);//function to run the entry object to generate simulations
 
   

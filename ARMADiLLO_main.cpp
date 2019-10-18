@@ -243,15 +243,7 @@ public:
     file_out << ">" << sequence_name << "\n" << sequence << "\n>" << UCA_sequence_name << "\n" << UCA_sequence << "\n>" << markup_header <<  "\n" << markup_string << "\n";
     file_out.close();
   }
-  
-  void printMarkup()
-  {
-    cout << sequence_name<<" Numb mutations:"<<mut_count<<"\n";
-    cout << sequence<<"\n";
-    cout << markup_string<<"\n";
-    getchar();
-  }
-  
+
   void printResults(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map, int line_wrap_length,double low_prob_cutoff,vector<double> &color_ladder)
   {
     int aa_mut_count=0;
@@ -854,7 +846,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
   return;
 }
 
-void read_treefile(string treefile)
+void read_treefile(string treefile)//function to read a tree file - still in testing
 {
   //test if file exists
   ifstream file1(treefile.c_str(), std::ios::in );
@@ -1264,20 +1256,6 @@ void simulate_S5F_lineage(string sequence, int number_branches, int &num_mutatio
     }
 }
 
-void number_of_mutations_two_seqs(string &s1, string &s2, int &mutation_count)
-{
-  ///Assumes sequences are already properly aligned
-  assert(s1.length()==s2.length());
-
-  mutation_count=0;
-  for(int i=0; i<s1.size(); i++)
-    {
-      if ((s1[i] == '-') || (s2[i] == '-')){continue;} ///Not counting gaps as mutations currently
-      if (s1[i] != s2[i]) {mutation_count++;}
-    }
-  return;
-}
-
 void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff)
 {
   vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
@@ -1491,58 +1469,7 @@ void process_fasta_sequence_to_seq_vector(string &sequence,vector<Seq> &seq_vect
 }
 
 
-template <typename Type>
-void vector1D_to_2D(vector<Type> &vector1D, int interval, vector<vector<Type> > &vector2D)
-{
-  vector2D.clear();///start fresh
-  assert(interval<=vector1D.size());
-  vector<Type> row;
-  for(int i=0; i<vector1D.size(); i++)
-    {
-      row.push_back(vector1D[i]);
-      if (((i+1)%interval==0)||(i==vector1D.size()-1))
-	{
-	  vector2D.push_back(row);
-	  row.clear();
-	}
-    }
-  return;
-}
 
-template <typename Type>
-void vector2D_to_3D(vector<vector<Type> > &vector2D, int interval, vector<vector<vector<Type> > > &vector3D)
-{
-  vector3D.clear();
-  // cerr << vector2D.size() << " by " << vector2D[0].size() << "\n"; 
-  //slice each row by interval, and stack into one big 2D vector
-  vector<vector<Type> > all_sliced_rows;
-  int max_num_splits=0;
-  for(int i=0; i<vector2D.size(); i++)
-    {
-      vector<vector<Type> > dim2;
-      vector1D_to_2D(vector2D[i],interval,dim2);
-      for(int j=0; j<dim2.size(); j++)
-	{
-	  all_sliced_rows.push_back(dim2[j]);
-	}
-      if (dim2.size() > max_num_splits){max_num_splits=dim2.size();}
-    }
-  //cerr << "asr: " <<  all_sliced_rows.size() << "\n"; 
-  //re-apportion the slices in the right order to a 3D vector
-  for(int i=0; i<max_num_splits; i++)
-    {
-      //cerr << i << "\n";
-      vector<vector<Type> > temp;
-      for(int j=0; j<vector2D.size(); j++)
-	{
-	  temp.push_back(all_sliced_rows[i+(j*max_num_splits)]);
-	  //cerr << " " << j << "\n"; 
-	}
-      vector3D.push_back(temp);
-    }
-  //cerr << vector3D.size() << " by " << vector3D[0].size() << " by " << vector3D[0][0].size() << "\n"; 
-  return;
-}
 
 void load_S5F_files(string mutability_filename, string substitution_filename, map<string, S5F_mut> &S5F_5mers)
 {
@@ -1641,15 +1568,6 @@ void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_
     return;
 }
 
-template <typename Type>
-string convert_to_string(Type t)
-{
-  ostringstream convert;
-  convert << t;
-  return convert.str();
-}
-
-
 vector<pair<char, double > > sort_map_into_pair_vctr(map<char,double> &M)
 {
   
@@ -1706,15 +1624,6 @@ void correct_for_fivemer_with_gap(int i, string sequence, string &new_fivemer)
   return;
 }
 
-void print_pct_progress(int i, int size, int level)
-{
-  if (size<100){return;}
-  double a=size/(100*pow(10,level));
-  int b=1;
-  if (a>1){b=(int) a;}
-  if ((i%b)==0){cerr << setw(3) << fixed << setprecision(level) << (i/(double)size)*100.0 << "%\r" << flush;}
-  
-}
 
 
 void cleanup_SMUA_sequences(string sequence_name, string markup_header, string UCA_sequence, string sequence, string markup, string &new_UCA_sequence, string &new_sequence, string &new_markup, string species, string chain_type, int &number_of_replacements, bool &error_status)
@@ -1989,15 +1898,6 @@ void cleanup_SMUA_sequences(string sequence_name, string markup_header, string U
     }
   
   return;
-}
-
-bool sequence_has_ambiguities(string sequence)
-{
-  for(int i=0; i<sequence.length(); i++)
-    {
-      if ((sequence[i]!='A')&&(sequence[i]!='C')&&(sequence[i]!='T')&&(sequence[i]!='G')&&(sequence[i]!='-')){ return true;}
-    }
-  return false;
 }
 
 void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter)
@@ -2323,8 +2223,64 @@ map<string, map<string, string> > J_genes_list()
   return J_genes;
 }
 
-bool fexists(const std::string& filename)
+template <typename Type>
+void vector1D_to_2D(vector<Type> &vector1D, int interval, vector<vector<Type> > &vector2D)
 {
-  std::ifstream ifile(filename.c_str());
-  return (bool)ifile;
+  vector2D.clear();///start fresh
+  assert(interval<=vector1D.size());
+  vector<Type> row;
+  for(int i=0; i<vector1D.size(); i++)
+    {
+      row.push_back(vector1D[i]);
+      if (((i+1)%interval==0)||(i==vector1D.size()-1))
+	{
+	  vector2D.push_back(row);
+	  row.clear();
+	}
+    }
+  return;
+}
+
+template <typename Type>
+void vector2D_to_3D(vector<vector<Type> > &vector2D, int interval, vector<vector<vector<Type> > > &vector3D)
+{
+  vector3D.clear();
+  // cerr << vector2D.size() << " by " << vector2D[0].size() << "\n"; 
+  //slice each row by interval, and stack into one big 2D vector
+  vector<vector<Type> > all_sliced_rows;
+  int max_num_splits=0;
+  for(int i=0; i<vector2D.size(); i++)
+    {
+      vector<vector<Type> > dim2;
+      vector1D_to_2D(vector2D[i],interval,dim2);
+      for(int j=0; j<dim2.size(); j++)
+	{
+	  all_sliced_rows.push_back(dim2[j]);
+	}
+      if (dim2.size() > max_num_splits){max_num_splits=dim2.size();}
+    }
+  //cerr << "asr: " <<  all_sliced_rows.size() << "\n"; 
+  //re-apportion the slices in the right order to a 3D vector
+  for(int i=0; i<max_num_splits; i++)
+    {
+      //cerr << i << "\n";
+      vector<vector<Type> > temp;
+      for(int j=0; j<vector2D.size(); j++)
+	{
+	  temp.push_back(all_sliced_rows[i+(j*max_num_splits)]);
+	  //cerr << " " << j << "\n"; 
+	}
+      vector3D.push_back(temp);
+    }
+  //cerr << vector3D.size() << " by " << vector3D[0].size() << " by " << vector3D[0][0].size() << "\n"; 
+  return;
+}
+
+
+template <typename Type>
+string convert_to_string(Type t)
+{
+  ostringstream convert;
+  convert << t;
+  return convert.str();
 }
