@@ -395,7 +395,7 @@ public:
       }
   }
 
-  void replaceTable(map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input)
+  bool replaceTable(map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input)
   {
     string UCA_aa_sequence="";
     int V_mut_count=round((mut_count*Vgene_length/(sequence.length()-cdr_length)+Vgene_mut_count*3)/4);
@@ -404,8 +404,15 @@ public:
     string freq_table=Vgene+"_"+std::to_string(V_mut_count)+".freq_table.txt";
     cerr<<"Sequence name "<<markup_header<<'\n';
     cerr << "Chosen V frequency table "<<freq_table<<"\n";
+    if (v_input.find(freq_table)==v_input.end())
+      {
+	cout << freq_table<< " : not found in database, reverting to simulating sequence\n";
+	return false;
+      }
+    map<int, map<char,double>> positional_aa_freqs=v_input.find(freq_table)->second;
     string shift=UCA_aa_sequence;
-    for (int i=0; i < UCA_aa_sequence.length(); i++){
+    for (int i=0; i < UCA_aa_sequence.length(); i++)
+      {
       if (UCA_sequence[3*i]=='-' || UCA_sequence[3*i+1]=='-' || UCA_sequence[3*i+2]=='-')
 	{
 	  shift[i]='1';
@@ -419,9 +426,10 @@ public:
 	{
 	  shift[i]='0';
 	}
-    }
+      }
     ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
-     map<int, map<char,double>> positional_aa_freqs=v_input.find(freq_table)->second;
+    
+
     ///dealing with insertion and deletion
     int cnt=0 ;
     for(int j=0; j<Vgene_length/3; j++)
@@ -452,6 +460,11 @@ public:
 
     freq_table=Jgene+"_"+std::to_string(J_mut_count)+".freq_table.txt";
     cerr << "Chosen J frequency table:" << freq_table<<"\n";
+    if (v_input.find(freq_table)==v_input.end())
+      {
+	cout << freq_table<< " : not found in database, reverting to simulating sequence\n";
+	return false;
+      }
     if (Jgene_mut_count==0)
       {
 	for(int j=0; j<Jgene_length/3; j++)
@@ -485,6 +498,7 @@ public:
 	      }
 	  }
       }
+    return true;
   }
   
   void outputSimSeqs(int max_iter, int branches)//function to write out the simulated sequences
@@ -508,7 +522,6 @@ public:
     fileDNA_out.close();
   }
 
-    
 };
 
 ///GLOBALS
@@ -522,7 +535,7 @@ int stop_codon_count;
 void helpMenu()
 {
   cout << "ARMADiLLO <arguments>\n";
-  cout << "USAGE: -SMUA [SMUA file] -freq_dir [V, J Frequency file directory] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(100)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
+  cout << "USAGE: -SMUA [SMUA file] -freq_dir [V, J Frequency file directory] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(1000)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
   exit(1);
 
   return;
@@ -799,7 +812,7 @@ int main(int argc, char *argv[])
    for(int i=SMUA_start; i<SMUA_end; i++)
      {
        if(thread_list[i].joinable())
-	 thread_list[i].join();
+   	 thread_list[i].join();
      }
    //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
@@ -828,7 +841,12 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
   nab.createShield(arg.ignore_CDR3,arg.ignoreV,arg.ignoreJ);
   if(arg.quick)
     {
-      nab.replaceTable(dna_to_aa_map, v_input);
+      bool quickRun=nab.replaceTable(dna_to_aa_map, v_input);
+      if(!quickRun)
+	{
+	  cerr << "Carrying out simulation of sequences\n";
+	  nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
+	}
       if(arg.output_seqs)//write out simulated sequences if argument is true
 	cerr << "No sequences generated during quick generations\n";
     }
