@@ -38,7 +38,7 @@ The generated HTML files can be viewed in any browser; however, it will require 
 
 -s \[S5F substitution file\]
 
--max_iter \[cycles of B cell maturation(100)\]
+-max_iter \[cycles of B cell maturation(1000)\]
 
 -c \[cutoff for highlighting low prob (1=1%)\]
 
@@ -59,6 +59,14 @@ The generated HTML files can be viewed in any browser; however, it will require 
 -random_seed \[provide a random seed\]
 
 -ignore_CDR3 \[flag to turn on ignoring the CDR3\]
+
+-ignore_J \[flag to turn on ignoring the J region\]
+
+-ignore_V \[flag to turn on ignoring the V region\]
+
+-freq_dir \[directory containing frequency tables\]
+
+-amo_file \[AMO file that contains the binary data ofthe frequency tables\]
 
 ## Authors
 
