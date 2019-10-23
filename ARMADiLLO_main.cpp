@@ -503,11 +503,8 @@ public:
   
   void outputSimSeqs(int max_iter, int branches)//function to write out the simulated sequences
   {
-    string seqs_fasta_file;
-    string seqsDNA_fasta_file;
     ofstream file_out;
     file_out.open(seqs_fasta_file.c_str());
-	       
     ofstream fileDNA_out;
     fileDNA_out.open(seqsDNA_fasta_file.c_str());
     //for loop to build branches
@@ -854,7 +851,9 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     {
       nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
       if(arg.output_seqs)//write out simulated sequences if argument is true
-	nab.outputSimSeqs(arg.max_iter,arg.branches);
+	{
+		nab.outputSimSeqs(arg.max_iter,arg.branches);
+	}
     }
   nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
   //clock_t end=clock();
