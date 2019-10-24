@@ -1,3 +1,5 @@
+![Alt text](logoD.png?raw=true "Title")
+
 # ARMADiLLO
 
 ARMADiLLO code base
