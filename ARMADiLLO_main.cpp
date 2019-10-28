@@ -752,7 +752,7 @@ int main(int argc, char *argv[])
    load_S5F_files(mutability_filename,substitution_filename, S5F_5mers);
 
    cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\tsum(log(P))\n";
-   const std::string direct=freq_dir;
+   const std::string freq_directory=freq_dir;
    map<string,map<int, map<char,double> >>  v_input;
    if (arguments.quick==true)
      {
@@ -771,7 +771,7 @@ int main(int argc, char *argv[])
 	 {     
 	   std::mutex mtx;
 	   mtx.lock();
-	   read_V(direct, v_input);
+	   read_V(freq_directory, v_input);
 	   mtx.unlock();
 	   ofstream outfs(amoFile);
 	   boost::archive::binary_oarchive outa(outfs);

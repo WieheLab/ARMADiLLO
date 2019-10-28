@@ -3,19 +3,19 @@
 cxx=/usr/bin/g++
 flags=-ggdb -O3 -std=c++11
 
-ifneq (,$(findstring dhvi,$(shell uname -n)))
+ifneq (,$(findstring dhvi,$(shell uname -n)))#links and libs for duke cluster
 	links=-I/datacommons/dhvi/scripts/lib/boost/ -L /datacommons/dhvi/scripts/lib/boost/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
 	libs=/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/lib/libboost_serialization.a
-else ifneq (,$(findstring Darwin,$(shell uname -s)))
+else ifneq (,$(findstring Darwin,$(shell uname -s)))#links and libs for osx
 	links=-I/opt/local/include/ #-L/opt/local/include/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
 	libs=/opt/local/lib/libboost_serialization-mt.dylib
-else
+else #links for linux
 	links=-L/usr/lib/x86_64-linux-gnu/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
 	libs=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
 endif
 
 
-ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o
+ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o #linking of ARMADiLLO
 	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o ${libs}
 
 ARMADiLLO_main.o: ARMADiLLO_main.cpp ARMADiLLO_main.hpp HTML.hpp utilities.hpp
@@ -27,7 +27,7 @@ utilities.o: utilities.cpp utilities.hpp
 HTML.o: HTML.cpp HTML.hpp
 	${cxx} ${flags} ${links} -c HTML.cpp
 
-clean:
-	rm *.o ARMADiLLO
+clean: #cleaning out old compiled files
+	rm -f ARMADiLLO_main.o utilities.o HTML.o ARMADiLLO
 
 #END OF MAKEFILE
