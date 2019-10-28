@@ -55,6 +55,8 @@ public:
   vector<string> mature_mutant_sequences;
   vector<string> DNA_mutant_sequences;
   vector<string> markup_mask;
+  string log_cout="";
+  string log_cerr="";
   vector<bool> shield_mutations;
   ~NabEntry() {};
   NabEntry(vector<string>  Entry, int numberMuts)//constructor with number of mutations
@@ -95,7 +97,12 @@ public:
 	output_freq_table=sequence_name+".N"+to_string(numberMuts)+".freq_table.txt";
       }
   }
-
+  void printlog()
+  {
+    cerr << log_cerr;
+    cout << log_cout;
+  }
+  
   void getNumberMutations()
   {
     assert(UCA_sequence.length()==sequence.length());
@@ -182,7 +189,7 @@ public:
   {
     if(ignore_CDR3 && ignoreV && ignoreJ)
       {
-	cerr << "Whole sequence ignore, nothing to process\n";
+	log_cerr+="Whole sequence ignore, nothing to process\n";
 	exit(-1);
       }
     for(int j=0;j<markup_string.length();j++)
@@ -201,17 +208,17 @@ public:
     string new_sequence="", new_UCA_sequence="", new_markup_string="";
     int number_of_replacements=0;
     bool error_status=false;
-    cerr << "Cleaning SMUA step\n"; 
+    log_cerr += "Cleaning SMUA step\n"; 
     cleanup_SMUA_sequences(sequence_name, markup_header, UCA_sequence, sequence, markup_string, new_UCA_sequence, new_sequence, new_markup_string, species, chain_type, number_of_replacements, error_status);
     if (number_of_replacements>replace_J_upto)
       {
-	cerr << "Sequence: " << sequence_name << " required " << number_of_replacements << " replacements at the end of the J where " << replace_J_upto << " is allowed (user defined). Skipping that sequence\n"; 
-	cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
+	log_cerr+= "Sequence: "+ sequence_name + " required " + to_string(number_of_replacements) + " replacements at the end of the J where " + to_string(replace_J_upto) + " is allowed (user defined). Skipping that sequence\n"; 
+	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
 	return -1;
       }
     if (error_status){
-      cerr << "SMUA incorrectly formatted for sequence " << sequence_name << ". Skipping that sequence\n"; 
-      cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
+      log_cerr+= "SMUA incorrectly formatted for sequence " + sequence_name + ". Skipping that sequence\n"; 
+      log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
       return -1;
     }
     //cerr << new_UCA_sequence << "\n" << new_sequence << "\n"; 
@@ -299,12 +306,12 @@ public:
     int AAseqLen= UCA_seq_vector.size()/3;
     if (mut_count==0) 
       { 
-	cerr << "0 mutations found\n";   
-	cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << 0 << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<<PPvalue/AAseqLen << "\n"; 
+	log_cerr += "0 mutations found\n";   
+	log_cout += sequence_name + "\t" + to_string(aa_mut_count) + "\t" + to_string(mut_count) + "\t0\t 0\t0\t0\t"+ to_string(insertion_count)+ "\t"+to_string(deletion_count)+"\t"+to_string((insertion_count+deletion_count)/3) + "\t" +to_string(CDR3_length)+"\t"+to_string(PPvalue/AAseqLen)+ "\n"; 
       }
     else
       {
-	cout << sequence_name << "\t" << aa_mut_count << "\t" << mut_count << "\t" << p02_count << "\t" << p01_count << "\t" << p001_count << "\t" << p0001_count << "\t" << insertion_count << "\t" << deletion_count << "\t" << (insertion_count+deletion_count)/3 << "\t" << CDR3_length <<"\t"<< PPvalue/AAseqLen <<"\n"; 
+	log_cout += sequence_name + "\t" + to_string(aa_mut_count) + "\t" + to_string(mut_count) + "\t" + to_string(p02_count)+"\t"+to_string(p01_count)+ "\t" +to_string(p001_count)+ "\t"+to_string(p0001_count)+"\t"+to_string(insertion_count)+"\t"+to_string(deletion_count)+"\t"+to_string((insertion_count+deletion_count)/3) + "\t" + to_string(CDR3_length)+"\t"+to_string( PPvalue/AAseqLen)+"\n"; 
 	///print detailed ARMADiLLO output as HTML
 	vector<vector<Seq> > all_sequences;
 	all_sequences.push_back(UCA_seq_vector);
@@ -338,13 +345,13 @@ public:
   {
     if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence))
       {
-	cerr << "germline has stop codon...skipping this sequence\n"; 
-	cout << sequence_name << "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
+	log_cerr+= "germline has stop codon...skipping this sequence\n"; 
+	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
 	return;
       }
     int stop_codon_count=0;
     vector<int> countStopCodons;
-    cerr << "Simulating maturation of "<<sequence_name<<"\n";
+    log_cerr += "Simulating maturation of "+sequence_name+"\n";
     for(int j=1; j<=max_iter; j++)
       {
 	//print_pct_progress(j, max_iter, 1);
@@ -402,11 +409,11 @@ public:
     int J_mut_count=round((mut_count*Jgene_length/(sequence.length()-cdr_length)+Jgene_mut_count*3)/4);
     translate_dna_to_aa(UCA_sequence, UCA_aa_sequence, 1, dna_to_aa_map);
     string freq_table=Vgene+"_"+std::to_string(V_mut_count)+".freq_table.txt";
-    cerr<<"Sequence name "<<markup_header<<'\n';
-    cerr << "Chosen V frequency table "<<freq_table<<"\n";
+    log_cerr+="Sequence name "+markup_header+'\n';
+    log_cerr+= "Chosen V frequency table "+freq_table+"\n";
     if (v_input.find(freq_table)==v_input.end())
       {
-	cout << freq_table<< " : not found in database, reverting to simulating sequence\n";
+	log_cout += freq_table+ " : not found in database, reverting to simulating sequence\n";
 	return false;
       }
     map<int, map<char,double>> positional_aa_freqs=v_input.find(freq_table)->second;
@@ -459,10 +466,10 @@ public:
       }
 
     freq_table=Jgene+"_"+std::to_string(J_mut_count)+".freq_table.txt";
-    cerr << "Chosen J frequency table:" << freq_table<<"\n";
+    log_cerr+= "Chosen J frequency table:" + freq_table+"\n";
     if (v_input.find(freq_table)==v_input.end())
       {
-	cout << freq_table<< " : not found in database, reverting to simulating sequence\n";
+	log_cout += freq_table+ " : not found in database, reverting to simulating sequence\n";
 	return false;
       }
     if (Jgene_mut_count==0)
@@ -785,32 +792,22 @@ int main(int argc, char *argv[])
    if (SMUA_end>SMUA_alignments_and_markup.size()){SMUA_end=SMUA_alignments_and_markup.size();}
    //for(int i=0; i<SMUA_alignments_and_markup.size(); i++)
    int MAX_THREADS=num_threads;
-   /*for(int i=SMUA_start; i<SMUA_end; i+=MAX_THREADS)
+
+   int size=SMUA_end;
+   for(int i=SMUA_start;i<SMUA_end;i+=MAX_THREADS)
      {
+       int number_of_threads=min(MAX_THREADS,size-i);
        vector<thread> thread_list;
-       int number_of_threads=min(MAX_THREADS, SMUA_end-1);
-       for(int j=0; j<number_of_threads; j++)
+       for(int j=0;j<number_of_threads;j++)
 	 {
 	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments)));
 	 }
-       for(int j=0; j<number_of_threads; j++)
+       for(int j=0;j<number_of_threads;j++)
 	 {
 	   thread_list[j].join();
-	   }
-       //run_entry(S5F_5mers,dna_to_aa_map,SMUA_alignments_and_markup[i],v_input,arguments);
-       }*/
-   vector<thread> thread_list;
-   //int number_of_threads=min(MAX_THREADS, SMUA_end-1);
-   for(int i=SMUA_start; i<SMUA_end; i++)
-     {
-       thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i],std::ref(v_input),std::ref(arguments)));
-       //run_entry(S5F_5mers,dna_to_aa_map,SMUA_alignments_and_markup[i],v_input,arguments);
+	 }
      }
-   for(int i=SMUA_start; i<SMUA_end; i++)
-     {
-       if(thread_list[i].joinable())
-   	 thread_list[i].join();
-     }
+   
    //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
 }
@@ -856,6 +853,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
 	}
     }
   nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+  nab.printlog();
   //clock_t end=clock();
   //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   //cerr << "TIME: " << nab.sequence_name << " took " << elapsed_secs << " to process\n"; 

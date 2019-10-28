@@ -29,8 +29,8 @@ ARMADiLLO generates 2 HTML files <name>.ARMADiLLO.html, <name>.tiles.html, and <
 
 
 # Arguments
-*usage: ARMADiLLO -SMUA <SMUA file> -m Mutability.csv -s Substitution.csv <optional arguments> *
-***
+**usage: ARMADiLLO -SMUA <SMUA file> -m Mutability.csv -s Substitution.csv <optional arguments> **
+
 -help/-h
 
 -SMUA \[SMUA file\]
