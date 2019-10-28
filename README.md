@@ -1,4 +1,4 @@
-![Alt text](logoD.png?raw=true "Title")
+![Alt text](logoD.png?raw=true "ARMADiLLO log"o)
 
 ARMADiLLO code base
 
@@ -25,11 +25,11 @@ For example:
 ```
 ARMADiLLO -SMUA DH270_natural_pair_clone.VH.SimpleMarkedUAs.fasta -m Mutability.csv -s Substitution.csv -max_iter 100000 -chain heavy -species human -random _seed 12345
 ```
-ARMADiLLO generates 2 HTML files <name>.ARMADiLLO.html, <name>.tiles.html, and <name>.freq_table.txt. If the -output_seqs flag is used, two additional fasta files containing the generated nucleotide and amino acid sequences. The generated HTML files can be viewed in any browser; however, it will require the css files sequence_color.css and AMA.css for proper formatting.
+ARMADiLLO generates 2 HTML files \<name\>.ARMADiLLO.html, \<name\>.tiles.html, and \<name\>.freq_table.txt. If the -output_seqs flag is used, two additional fasta files containing the generated nucleotide and amino acid sequences. The generated HTML files can be viewed in any browser; however, it will require the css files sequence_color.css and AMA.css for proper formatting.
 
 
 # Arguments
-**usage: ARMADiLLO -SMUA <SMUA file> -m Mutability.csv -s Substitution.csv <optional arguments> **
+usage: ARMADiLLO -SMUA \[SMUA file\] -m Mutability.csv -s Substitution.csv <optional arguments>
 
 -help/-h
 
