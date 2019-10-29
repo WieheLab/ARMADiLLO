@@ -18,7 +18,7 @@ endif
 ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o #linking of ARMADiLLO
 	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o ${libs}
 
-ARMADiLLO_main.o: ARMADiLLO_main.cpp ARMADiLLO_main.hpp HTML.hpp utilities.hpp
+ARMADiLLO_main.o: ARMADiLLO_main.cpp ARMADiLLO_main.hpp HTML.hpp utilities.hpp nab.hpp
 	${cxx} ${flags} ${links} -c ARMADiLLO_main.cpp
 
 utilities.o: utilities.cpp utilities.hpp
