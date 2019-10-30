@@ -264,8 +264,6 @@ int main(int argc, char *argv[])
    ///load S5F files
    map <string, S5F_mut> S5F_5mers;
    load_S5F_files(mutability_filename,substitution_filename, S5F_5mers);
-
-   cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\tsum(log(P))\n";
    const std::string freq_directory=freq_dir;
    map<string,map<int, map<char,double> >>  v_input;
    if (arguments.quick==true)
@@ -287,12 +285,10 @@ int main(int argc, char *argv[])
 	   mtx.lock();
 	   read_V(freq_directory, v_input);
 	   mtx.unlock();
-	   ofstream outfs(amoFile);
-	   boost::archive::binary_oarchive outa(outfs);
-	   outa << v_input;
 	 }
      }
-   map<string, map<string, string> > J_genes=J_genes_list();
+   cout << "NAME\t#AA_MUTS\t#MUTS\t<.02\t<.01\t<.001\t<.0001\t#INS\t#DEL\t#INDELS/3\tCDR3_LEN\tsum(log(P))\n";
+   //map<string, map<string, string> > J_genes=J_genes_list();
    //iterate through the SMUA file and perform mutation analysis for each sequence
    //double total_elapsed_time=0;
    if (SMUA_end==-1){SMUA_end=SMUA_alignments_and_markup.size();}
@@ -314,6 +310,13 @@ int main(int argc, char *argv[])
 	   thread_list[j].join();
 	 }
      }
+
+   if (arguments.quick==true)
+     {
+       ofstream outfs(amoFile);
+       boost::archive::binary_oarchive outa(outfs);
+       outa << v_input;
+     }
    
    //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
@@ -329,7 +332,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
 {
   //double total_elapsed_time=0;
   //clock_t begin=clock();
-  NabEntry nab(SMUA_entries,arg.numbMutations);
+  NabEntry nab(SMUA_entries,arg);
   if(arg.clean_SMUA_first)
     {
       if (nab.cleanSMUA(arg.species,arg.chain_type,arg.replace_J_upto)<0)
@@ -342,12 +345,20 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
   nab.createShield(arg.ignore_CDR3,arg.ignoreV,arg.ignoreJ);
   if(arg.quick)
     {
-      bool quickRun=nab.replaceTable(dna_to_aa_map, v_input);
-      if(!quickRun)
+      //nab.Jgene_sequence=J_genes_list(arg.species,nab.Jgene);
+      nab.replaceTable(S5F_5mers,dna_to_aa_map, v_input,arg);
+      /*if(!quickRun)
 	{
+	  map<int, map<char,double>> freqTable;
 	  cerr << "Carrying out simulation of sequences\n";
 	  nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
-	}
+	  freqTable=nab.generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,"V");
+	  string vTableName=nab.Vgene+"_"+to_string(nab.Vgene_mut_count)+".freq_table.txt";
+	  v_input[vTableName]=freqTable;	  
+	  freqTable=nab.generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,"J");
+	  string jTableName=nab.Jgene+"_"+to_string(nab.Jgene_mut_count)+".freq_table.txt";
+	  v_input[jTableName]=freqTable;	  
+	  }*/
       if(arg.output_seqs)//write out simulated sequences if argument is true
 	cerr << "No sequences generated during quick generations\n";
     }
@@ -1562,84 +1573,84 @@ void replace_UCA_sequence_in_SMUA(string old_obs_sequence, string old_uca_sequen
   return;
 }
 
-void read_V(const std::string & name, map<string,map<int, map<char,double> >>  & v_input)
+void read_V(const std::string & dirname, map<string,map<int, map<char,double> >>  & v_input)
 {
-  vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
-  DIR* dpdf= opendir(name.c_str());
+    vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
+  DIR* dpdf= opendir(dirname.c_str());
   struct dirent * epdf;
 
-  map<int, map<char,double> > mature_mutant_positional_aa_freqs1;
+  //map<int, map<char,double> > mature_mutant_positional_aa_freqs1;
   
-    clock_t begin=clock();
-    cerr <<"Loading, Please wait ......";
+  clock_t begin=clock();
+  cerr <<"Loading, Please wait ......";
+  vector<thread> thread_list;
+  while ((epdf=readdir(dpdf))!=NULL){
+    string filename= epdf->d_name;
+    if(filename.length()<3)
+      continue;
+        map<int, map<char,double> > mature_mutant_positional_aa_freqs;
+    //       cout << name << "\t" << filename << "\n";
+    ifstream file;
+    string Vgen = dirname+'/'+ filename;
+    file.open(Vgen, std::ios::in );
+    if(!file)
+      {
+	return;
+      }
+    string dummyline;
+    int pos1; int pos=-1; double A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y;
+    while((!getline(file,dummyline).eof())){
+      if(pos==-1){pos++;continue;}
+      istringstream ss(dummyline);
+      getline(ss,dummyline,',')>>A;
+      getline(ss,dummyline,',')>>C;
+      getline(ss,dummyline,',')>>D;
+      getline(ss,dummyline,',')>>E;
+      getline(ss,dummyline,',')>>F;
+      getline(ss,dummyline,',')>>G;
+      getline(ss,dummyline,',')>>H;
+      getline(ss,dummyline,',')>>I;
+      getline(ss,dummyline,',')>>K;
+      getline(ss,dummyline,',')>>L;
+      getline(ss,dummyline,',')>>M;
+      getline(ss,dummyline,',')>>N;
+      getline(ss,dummyline,',')>>P;
+      getline(ss,dummyline,',')>>Q;
+      getline(ss,dummyline,',')>>R;
+      getline(ss,dummyline,',')>>S;
+      getline(ss,dummyline,',')>>T;
+      getline(ss,dummyline,',')>>V;
+      getline(ss,dummyline,',')>>W;
+      getline(ss,dummyline,',')>>Y;
+      
+      mature_mutant_positional_aa_freqs[pos][amino_acids[0]]=A;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[1]]=C;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[2]]=D;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[3]]=E;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[4]]=F;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[5]]=G;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[6]]=H;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[7]]=I;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[8]]=K;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[9]]=L;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[10]]=M;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[11]]=N;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[12]]=P;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[13]]=Q;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[14]]=R;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[15]]=S;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[16]]=T;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[17]]=V;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[18]]=W;
+      mature_mutant_positional_aa_freqs[pos][amino_acids[19]]=Y;
+      
+      pos++;
+    }
+    file.close();
+    v_input[filename]=mature_mutant_positional_aa_freqs;  
 
-     while ((epdf=readdir(dpdf))!=NULL){
-       
-       map<int, map<char,double> > mature_mutant_positional_aa_freqs;
-       string filename= epdf->d_name;
-       //       cout << name << "\t" << filename << "\n";
-       if(filename.length()<3)
-	 continue;
-       string Vgen = name+'/'+ filename;
-       ifstream file;
-       file.open(Vgen, std::ios::in );
-       if(!file)
-	 {
-	   continue;
-	 }
-       string dummyline;
-       int pos1; int pos=-1; double A,C,D,E,F,G,H,I,K,L,M,N,P,Q,R,S,T,V,W,Y;
-       while((!getline(file,dummyline).eof())){
-	 if(pos==-1){pos++;continue;}
-	 istringstream ss(dummyline);
-	 getline(ss,dummyline,',')>>A;
-	 getline(ss,dummyline,',')>>C;
-	 getline(ss,dummyline,',')>>D;
-	 getline(ss,dummyline,',')>>E;
-	 getline(ss,dummyline,',')>>F;
-	 getline(ss,dummyline,',')>>G;
-	 getline(ss,dummyline,',')>>H;
-	 getline(ss,dummyline,',')>>I;
-	 getline(ss,dummyline,',')>>K;
-	 getline(ss,dummyline,',')>>L;
-	 getline(ss,dummyline,',')>>M;
-	 getline(ss,dummyline,',')>>N;
-	 getline(ss,dummyline,',')>>P;
-	 getline(ss,dummyline,',')>>Q;
-	 getline(ss,dummyline,',')>>R;
-	 getline(ss,dummyline,',')>>S;
-	 getline(ss,dummyline,',')>>T;
-	 getline(ss,dummyline,',')>>V;
-	 getline(ss,dummyline,',')>>W;
-	 getline(ss,dummyline,',')>>Y;
-	 
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[0]]=A;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[1]]=C;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[2]]=D;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[3]]=E;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[4]]=F;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[5]]=G;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[6]]=H;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[7]]=I;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[8]]=K;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[9]]=L;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[10]]=M;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[11]]=N;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[12]]=P;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[13]]=Q;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[14]]=R;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[15]]=S;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[16]]=T;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[17]]=V;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[18]]=W;
-	 mature_mutant_positional_aa_freqs[pos][amino_acids[19]]=Y;
-
-	 pos++;
-       }
-       file.close();
-       v_input[filename]=mature_mutant_positional_aa_freqs;
-     }
-
+  }
+  
   clock_t end=clock();
   double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   cerr << "Reading in files took " << elapsed_secs << " to process\n";
@@ -1647,7 +1658,8 @@ void read_V(const std::string & name, map<string,map<int, map<char,double> >>  &
   return ;
 }
 
-map<string, map<string, string> > J_genes_list()
+//map<string, map<string, string> >
+string J_genes_list(string species,string IGname)
 {
   string H_J4_1="ACTACTTTGACTACTGGGGCCAAGGAACCCTGGTCACCGTCTCCTCAG";
   string H_J4_2="ACTACTTTGACTACTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAG";
@@ -1734,7 +1746,7 @@ map<string, map<string, string> > J_genes_list()
   J_genes["rhesus"]["IGKJ3-1*01"]=K_J3_1_1_rm;
   J_genes["rhesus"]["IGKJ4-1*01"]=K_J4_1_1_rm;
   J_genes["rhesus"]["IGKJ5-1*01"]=K_J5_1_1_rm;
-  return J_genes;
+  return J_genes[species][IGname];
 }
 
 template <typename Type>

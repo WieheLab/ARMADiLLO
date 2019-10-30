@@ -17,9 +17,10 @@ public:
 
   ///amino acids vector
   vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
-
+  
   string output_filename,tiles_output_filename,seqsDNA_fasta_file,seqs_fasta_file,output_freq_table;
   string UCA_seq_name,Vgene,Dgene,Jgene;
+  string Jgene_sequence;
   int cdr_length=0,Vgene_length=0,Jgene_length=0;
   map<int, map<char,double> > mature_mutant_positional_aa_freqs;
   int mut_count=0,Vgene_mut_count=0,Jgene_mut_count=0,CDR3_mut_count=0;//mutations counts for all and for the pieces
@@ -27,11 +28,12 @@ public:
   vector<string> mature_mutant_sequences;
   vector<string> DNA_mutant_sequences;
   vector<string> markup_mask;
+  bool ignore_CDR3=false,ignoreJ=false,ignoreV=false,setMutcount=false;
   string log_cout="";
   string log_cerr="";
   vector<bool> shield_mutations;
   ~NabEntry() {};
-  NabEntry(vector<string>  Entry, int numberMuts)//constructor with number of mutations
+  NabEntry(vector<string>  Entry, Arguments arg)//constructor with number of mutations
   {
     sequence_name=Entry[0];
     sequence=Entry[1];
@@ -39,7 +41,11 @@ public:
     UCA_sequence=Entry[3];
     markup_header=Entry[4];
     markup_string=Entry[5];
-    mut_count=numberMuts;
+    mut_count=arg.numbMutations;
+    ignore_CDR3=arg.ignore_CDR3;
+    ignoreJ=arg.ignoreJ;
+    ignoreV=arg.ignoreV;
+    
     for(int j=0; j<UCA_sequence.length(); j++)
       {
 	if (UCA_sequence[j] == '-'){insertion_count++;}
@@ -50,7 +56,7 @@ public:
     vector<bool> _shield_mutations(markup_string.length(), false);
     shield_mutations=_shield_mutations;
 
-    if(numberMuts<0)
+    if(arg.numbMutations<0)
       {
 	output_filename=sequence_name+".ARMADiLLO.html";
 	tiles_output_filename=sequence_name+".tiles.html";
@@ -62,17 +68,73 @@ public:
       }
     else
       {
-	output_filename=sequence_name+".N"+to_string(numberMuts)+".ARMADiLLO.html";
-	tiles_output_filename=sequence_name+".N"+to_string(numberMuts)+".tiles.html";
-	seqs_fasta_file=sequence_name+".N"+to_string(numberMuts)+".ARMADiLLO.simulated_seqs.fasta";
-	seqsDNA_fasta_file=sequence_name+".N"+to_string(numberMuts)+".DNA.ARMADiLLO.simulated_seqs.fasta";
-	output_freq_table=sequence_name+".N"+to_string(numberMuts)+".freq_table.txt";
+	setMutcount=true;
+	output_filename=sequence_name+".N"+to_string(arg.numbMutations)+".ARMADiLLO.html";
+	tiles_output_filename=sequence_name+".N"+to_string(arg.numbMutations)+".tiles.html";
+	seqs_fasta_file=sequence_name+".N"+to_string(arg.numbMutations)+".ARMADiLLO.simulated_seqs.fasta";
+	seqsDNA_fasta_file=sequence_name+".N"+to_string(arg.numbMutations)+".DNA.ARMADiLLO.simulated_seqs.fasta";
+	output_freq_table=sequence_name+".N"+to_string(arg.numbMutations)+".freq_table.txt";
       }
   }
   void printlog()
   {
     cerr << log_cerr;
     cout << log_cout;
+  }
+
+  map<int, map<char,double>> generateVInputTable(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int mutation_count, string gene)
+  {
+    int iter=200000;
+    //map<string,map<string, string>> J_genes_list=J_genes_list();
+    map<int, map<char,double> > sim_aa_freqs;
+    vector<string> sub_mature_mutant_sequences;
+    vector<bool> sub_shield_mutations;
+    string sub_sequence;
+    int start=0;
+
+    if(gene.compare("J")==0)
+      {
+	//sub_sequence=Jgene_sequence;
+	  
+	sub_sequence="CTACTGGTACTTCGATCTC"+UCA_sequence.substr(cdr_length+Vgene_length);
+      }
+    else
+      {
+	sub_sequence=UCA_sequence.substr(0,Vgene_length+2);
+      }
+    //boost::replace_all(sub_sequence,"-","");
+
+    for(int i=0;i<sub_sequence.length();i++)
+      sub_shield_mutations.push_back(0);
+    
+    for(int j=1; j<=iter; j++)
+      {
+	vector<string> mutant_sequences;
+	string _aa_sequence;
+	simulate_S5F_mutation(sub_sequence, mutation_count, S5F_5mers, gen, dis,true, mutant_sequences, true, sub_shield_mutations);
+	DNA_mutant_sequences.push_back(mutant_sequences[mutant_sequences.size()-1]);
+	translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], _aa_sequence, 1, dna_to_aa_map);
+	//	   mature_mutant_sequences[j-1]=aa_sequence2;
+	sub_mature_mutant_sequences.push_back(_aa_sequence);
+      }
+
+    for(int j=start; j<sub_mature_mutant_sequences[0].length(); j++)
+      {
+	for(int k=0; k<amino_acids.size(); k++)
+	  {
+	    sim_aa_freqs[j][amino_acids[k]]=0;
+	  }
+      }
+    for(int j=0; j<sub_mature_mutant_sequences.size(); j++)
+      {
+	//cout << ">mutant" << i+1 << "\n" << mature_mutant_sequences[i] << "\n";
+	for(int k=start; k<sub_mature_mutant_sequences[j].size(); k++)
+	  {
+	    sim_aa_freqs[k][sub_mature_mutant_sequences[j][k]]+=(1/((double)sub_mature_mutant_sequences.size()));
+	  }
+      }
+    
+    return sim_aa_freqs;
   }
   
   void getNumberMutations()
@@ -161,7 +223,7 @@ public:
   {
     if(ignore_CDR3 && ignoreV && ignoreJ)
       {
-	log_cerr+="Whole sequence ignore, nothing to process\n";
+	log_cerr+="Whole sequence ignored, nothing to process\n";
 	exit(-1);
       }
     for(int j=0;j<markup_string.length();j++)
@@ -322,15 +384,24 @@ public:
 	return;
       }
     int stop_codon_count=0;
+    int _mut_count=mut_count;
     vector<int> countStopCodons;
-    log_cerr += "Simulating maturation of "+sequence_name+"\n";
+
+    if(ignore_CDR3 && !setMutcount)
+      _mut_count-=CDR3_mut_count;
+    if(ignoreJ && !setMutcount)
+      _mut_count-=Jgene_mut_count;
+    if(ignoreV && !setMutcount)
+      _mut_count-=Vgene_mut_count;
+    
+    //log_cerr += "Simulating maturation of "+sequence_name+"\n";
     for(int j=1; j<=max_iter; j++)
       {
 	//print_pct_progress(j, max_iter, 1);
 	if(lineage)
 	  {
 	    vector<string> mutant_sequences;
-	    simulate_S5F_lineage(UCA_sequence, branches,mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
+	    simulate_S5F_lineage(UCA_sequence, branches,_mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
 	    for(int i=0;i<mutant_sequences.size();i++)
 	      {
 		string _aa_sequence;
@@ -345,7 +416,7 @@ public:
 	    vector<string> mutant_sequences;
 	    string _aa_sequence;
 	    int stopCounts=0;
-	    stopCounts=simulate_S5F_mutation(UCA_sequence, mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
+	    stopCounts=simulate_S5F_mutation(UCA_sequence,_mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
 	    countStopCodons.push_back(stopCounts);
 	    DNA_mutant_sequences.push_back(mutant_sequences[mutant_sequences.size()-1]);
 	    translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], _aa_sequence, 1, dna_to_aa_map);
@@ -374,11 +445,11 @@ public:
       }
   }
 
-  bool replaceTable(map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input)
+  bool replaceTable(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input, Arguments &arg)
   {
     string UCA_aa_sequence="";
-    int V_mut_count=round((mut_count*Vgene_length/(sequence.length()-cdr_length)+Vgene_mut_count*3)/4);
-    int J_mut_count=round((mut_count*Jgene_length/(sequence.length()-cdr_length)+Jgene_mut_count*3)/4);
+    int V_mut_count=round(((mut_count-CDR3_mut_count)*Vgene_length/(sequence.length()-cdr_length)+Vgene_mut_count*3)/4);
+    int J_mut_count=round(((mut_count-CDR3_mut_count)*(Jgene_length)/(sequence.length()-cdr_length)+Jgene_mut_count*3)/4);
     translate_dna_to_aa(UCA_sequence, UCA_aa_sequence, 1, dna_to_aa_map);
     string freq_table=Vgene+"_"+std::to_string(V_mut_count)+".freq_table.txt";
     log_cerr+="Sequence name "+markup_header+'\n';
@@ -386,7 +457,8 @@ public:
     if (v_input.find(freq_table)==v_input.end())
       {
 	log_cout += freq_table+ " : not found in database, reverting to simulating sequence\n";
-	return false;
+	map<int, map<char,double>> freqTable_aa=generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,V_mut_count,"V");
+	v_input[freq_table]=freqTable_aa;
       }
     map<int, map<char,double>> positional_aa_freqs=v_input.find(freq_table)->second;
     string shift=UCA_aa_sequence;
@@ -407,8 +479,6 @@ public:
 	}
       }
     ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
-    
-
     ///dealing with insertion and deletion
     int cnt=0 ;
     for(int j=0; j<Vgene_length/3; j++)
@@ -442,7 +512,8 @@ public:
     if (v_input.find(freq_table)==v_input.end())
       {
 	log_cout += freq_table+ " : not found in database, reverting to simulating sequence\n";
-	return false;
+	map<int, map<char,double>> freqTable_aa=generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,J_mut_count,"J");
+	v_input[freq_table]=freqTable_aa;
       }
     if (Jgene_mut_count==0)
       {

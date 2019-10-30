@@ -128,7 +128,8 @@ template <typename Type>
 void vector1D_to_2D(vector<Type> &, int, vector<vector<Type> > &);
 template <typename Type>
 string convert_to_string(Type);
-map<string, map<string, string> > J_genes_list();
+//map<string, map<string, string> >
+string J_genes_list(string species,string IGname);
 
 void run_entry(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &);//function to run the entry object to generate simulations
 
