@@ -96,7 +96,7 @@ public:
       {
 	//sub_sequence=Jgene_sequence;
 	  
-	sub_sequence="CTACTGGTACTTCGATCTC"+UCA_sequence.substr(cdr_length+Vgene_length);
+	sub_sequence=UCA_sequence.substr(cdr_length+Vgene_length);
       }
     else
       {
@@ -215,6 +215,10 @@ public:
 	    Jgene_length++;
 	    lastChar="J";
 	  }
+	else if(markup_string[j]=='-')
+	  {
+	    _markup_mask[j]="G";
+	  }
       }
     return _markup_mask;
   }
@@ -228,12 +232,15 @@ public:
       }
     for(int j=0;j<markup_string.length();j++)
       {
-	if(ignore_CDR3 && markup_mask[j]=="C")
+	if(UCA_sequence.substr(j,1)=="-")
+	  shield_mutations[j]=true;
+	else if(ignore_CDR3 && markup_mask[j]=="C")
 	   shield_mutations[j]=true;
 	else if(ignoreV && markup_mask[j]=="V")
 	  shield_mutations[j]=true;
 	else if(ignoreJ && markup_mask[j]=="J")
 	  shield_mutations[j]=true;
+
       }
   }
 
