@@ -309,8 +309,7 @@ int main(int argc, char *argv[])
 	 {
 	   thread_list[j].join();
 	 }
-       //       int d;
-       //cin >> d;
+       //getchar();
      }
 
    if (arguments.quick==true)
