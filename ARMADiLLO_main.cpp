@@ -45,8 +45,20 @@ int stop_codon_count;
 
 void helpMenu()
 {
-  cout << "ARMADiLLO <arguments>\n";
-  cout << "USAGE: -SMUA [SMUA file] -freq_dir [V, J Frequency file directory] -w [line wrap length (60)] -m [S5F mutability file] -s [S5F substitution file] -max_iter [cycles of B cell maturation(1000)] -c [cutoff for highlighting low prob (1=1%)] -replace_J_upto [number of replacements in J allowed] -chain [chain type (heavy=default|kappa|lambda)] -species [(human=default|rhesus)] -lineage/-l [integer number of end branches for lineage generation] -number/n [number of mutations to do - overrides doing number of mutations from sequence] -clean_first [clean the SMUA prior to running] -output_seqs [output sim seqs] -random_seed [provide a random seed]\n";
+  cout << "ARMADiLLO\n\n";
+  cout << "USAGE:\n\t ARMADiLLO -SMUA [SMUA file] -m [S5F mutability file] -s [S5F substitution file] <opt arguments>\n\n";
+  cout << "required arguments:\n\t -SMUA [SMUA file]\n";
+  cout << "\t -m [S5F mutability file]\n";
+  cout << "\t -s [S5F substitution file]\n";
+  cout << "optional arguments:\n";
+  cout << "\t -freq_dir [V, J Frequency file directory]\n";
+  cout << "\t -amofile [amo file] : sets the amo file to be used\n";
+  cout << "\t -resetamo   : flag to reset the amo file associated with a directory\n";
+  cout <<"\t -w [line wrap length (60)]\n\t -max_iter [cycles of B cell maturation(1000)]\n\t -c [cutoff for highlighting low prob (1=1%)]\n\t -replace_J_upto [number of replacements in J allowed]\n\t -chain [chain type (heavy=default|kappa|lambda)]\n\t -species [(human=default|rhesus)]\n\t -(l)ineage [number of trees] : argument to generate the mutations through a lineage generation instead of linear generation\n\t -(n)umber [number of mutations] : arguemnt to set number of mutations to generate instead of taking from mutant sequence\n\t -clean_first : flag to turn on cleaning the SMUA prior to running\n\t -output_seqs : flag to turn on printing out simulated seq]\n";
+  cout <<"\t -ignore_CDR3 : flag to ignore CDR3, default is false\n";
+  cout <<"\t -ignore_V    : flag to ignore V, default is false\n";
+  cout <<"\t -ignore_J    : lag to ignore J, default is false\n";
+  cout <<"\t -random_seed [provide a random seed]\n";
   exit(1);
 
   return;
@@ -111,8 +123,12 @@ int main(int argc, char *argv[])
 	  arguments.quick=true;
 	  if(!fexists(amoFile))
 	    {
-	      cout << amoFile<< " can not be found\n";
-	      exit(1);
+	      map<string,map<int, map<char,double> >>  v_input;
+	      ofstream outfs(amoFile);
+	      boost::archive::binary_oarchive outa(outfs);
+	      outa << v_input;
+	      //cout << amoFile<< " can not be found\n";
+	      //exit(1);
 	    }
 	}
       if (arg == "-w")
@@ -141,15 +157,15 @@ int main(int argc, char *argv[])
 	{
 	  arguments.low_prob_cutoff=atof(next_arg.c_str())/100.0;
 	}
-      if (arg == "-ignore_CDR3" || arg =="-ignoreCDR3")
+      if (arg == "-ignore_CDR3" || arg =="-ignoreCDR3" || arg =="-ignorecdr3")
         {
           arguments.ignore_CDR3=true;
         }
-      if(arg == "-ignoreJ" || arg=="-ignore_J")
+      if(arg == "-ignoreJ" || arg=="-ignore_J" || arg=="-ignore_j"|| arg=="-ignorej")
         {
           arguments.ignoreJ=true;
         }
-      if(arg == "-ignoreV" || arg =="-ignore_V")
+      if(arg == "-ignoreV" || arg =="-ignore_V"|| arg=="-ignore_v"|| arg=="-ignorev")
         {
           arguments.ignoreV=true;
         }
@@ -177,7 +193,7 @@ int main(int argc, char *argv[])
 	{
 	  arguments.clean_SMUA_first=true;
 	}
-      if (arg == "-random_seed")
+      if (arg == "-random_seed" && arg == "-seed")
 	{
 	  random_seed=atoi(next_arg.c_str());
 	  user_provided_random_seed=true;
@@ -203,11 +219,6 @@ int main(int argc, char *argv[])
 	{
 	  arguments.ignore_warnings=true;
 	}
-      if(arg == "-tree" or arg == "-t")
-	{
-	  treefile=next_arg.c_str();
-	  read_treefile(treefile);
-	}
       if(arg == "-resetamo" or arg == "-reset_amo" or arg == "-reload_amo")
 	{
 	  cout << "reseting AMO file\n";
@@ -218,17 +229,17 @@ int main(int argc, char *argv[])
   
   if( SMUA_filename.size()<1 || !fexists(SMUA_filename))
      {
-       cout << "Error in SMUA file\n";
+       cout << "Error in SMUA file\n\n";
        helpMenu();
      }
    if(mutability_filename.size()<1 || !fexists(mutability_filename))
      {
-       cout << "Error in mutability file\n";
+       cout << "Error in mutability file\n\n";
        helpMenu();
      }
    if(substitution_filename.size()<1 || !fexists(substitution_filename))
      {
-       cout << "Error in substitution file\n";
+       cout << "Error in substitution file\n\n";
        helpMenu();
      }
    if ((num_threads==0)||(num_threads>max_num_threads)){num_threads=max_num_threads;}
@@ -295,7 +306,6 @@ int main(int argc, char *argv[])
    if (SMUA_end>SMUA_alignments_and_markup.size()){SMUA_end=SMUA_alignments_and_markup.size();}
    //for(int i=0; i<SMUA_alignments_and_markup.size(); i++)
    int MAX_THREADS=num_threads;
-
    int size=SMUA_end;
    for(int i=SMUA_start;i<SMUA_end;i+=MAX_THREADS)
      {
@@ -369,28 +379,6 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
   //total_elapsed_time+=elapsed_secs;
   return;
 }
-
-void read_treefile(string treefile)//function to read a tree file - still in testing
-{
-  //test if file exists
-  ifstream file1(treefile.c_str(), std::ios::in );
-  if (!file1.is_open()) {cerr << "could not open " << treefile << " ...exiting...\n"; exit(1);}
-  //read file 
-  string file_line;
-  string treedata;
-  while (!getline(file1,file_line).eof())
-    {
-      chomp(file_line);
-      cout << file_line << "\n";
-      file_line.erase(remove(file_line.begin(),file_line.end(),'\n'),file_line.end());
-      treedata+=file_line;
-    }
-  cout << "data : "<< treedata<<"\n";
-  
-  exit(1);
-  return;
-}
-
 
 void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder)
 {
@@ -688,7 +676,6 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
 	}
       
       //cerr << j << "\t" << R << "\t" << mutate_position_i << "\t" << sequence[mutate_position_i] << "\t" << mut_scores[mutate_position_i] << "\t"; 
-
       ///mutate position according to substitution model
       map<char, double> substitution_probs;
       map<char, double> substitution_probs_uniform;
@@ -961,7 +948,6 @@ void process_SMUA_sequence_to_seq_vector(string &sequence, string &markup_string
       seq_vector.push_back(temp);
     }
   return;
-
 }
 
 void process_fasta_sequence_to_seq_vector(string &sequence,vector<Seq> &seq_vector, map<string,string> &dna_to_aa_map, map<string,S5F_mut> &S5F_5mers)
@@ -1055,8 +1041,7 @@ void load_S5F_files(string mutability_filename, string substitution_filename, ma
 	}
       else{cerr << "ERROR parsing substitution.csv.  No fivemer " << tokens[0] << " found in mutability scores\n"; exit(1);}
       counter++;
-    }
-  
+    } 
   return;
 }
 
@@ -1064,9 +1049,9 @@ void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_
 {
   ifstream file(filename.c_str(), std::ios::in );
   if (!file.is_open()) {cerr << "could not open " << filename << " ...exiting...\n"; exit(1);}
-
+  
   vector<string> UA_markup_file_contents;
-
+  
   string file_str;
   while (!getline(file, file_str).eof())
     {
@@ -1104,12 +1089,11 @@ void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_
       temp.push_back(markup_sequence);
       UA_alignments_and_markup.push_back(temp);
     }
-    return;
+  return;
 }
 
 vector<pair<char, double > > sort_map_into_pair_vctr(map<char,double> &M)
 {
-  
   vector<pair<char,double> > V;
   for(map<char,double>::iterator it=M.begin(); it !=M.end(); ++it)
     {
@@ -1159,7 +1143,6 @@ void correct_for_fivemer_with_gap(int i, string sequence, string &new_fivemer)
       new_fivemer=five_prime_bases+sequence[i]+three_prime_bases;
       if (new_fivemer.length() !=5){new_fivemer="NO_SCORE";}
     }
-  
   return;
 }
 
@@ -1351,10 +1334,18 @@ void cleanup_SMUA_sequences(string sequence_name, string markup_header, string U
   bool indels_present=false;
   for(int i=0; i<new_sequence.length(); i++)
     {
-      if ((new_sequence[i] == '-') || (new_UCA_sequence[i]=='-')){indels_present=true;}
+      if ((new_sequence[i] == '-') || (new_UCA_sequence[i]=='-'))
+	{
+	  indels_present=true;
+	}
     }
 
-  if (sequence_has_ambiguities(new_sequence)){cerr << "ERROR: " << sequence_name << " has ambiguities, cannot proceed\n"; error_status=true; return;}
+  if (sequence_has_ambiguities(new_sequence))
+    {
+      cerr << "ERROR: " << sequence_name << " has ambiguities, cannot proceed\n";
+      error_status=true;
+      return;
+    }
   if (indels_present == false){return;} //no indels, we're done
   
   //for now trust that Cloanalyst makes accurate alignments
@@ -1433,7 +1424,6 @@ void cleanup_SMUA_sequences(string sequence_name, string markup_header, string U
 	    }
 	}
     }
-  
   return;
 }
 
@@ -1652,7 +1642,6 @@ void read_V(const std::string & dirname, map<string,map<int, map<char,double> >>
     }
     file.close();
     v_input[filename]=mature_mutant_positional_aa_freqs;  
-
   }
   
   clock_t end=clock();

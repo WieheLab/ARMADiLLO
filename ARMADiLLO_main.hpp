@@ -119,7 +119,6 @@ bool sequence_has_ambiguities(string);
 void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &, vector<double> &, int &);
 void replace_UCA_sequence_in_SMUA(string, string, string, string, string &, string &, string &, bool);
 void helpMenu();
-void read_treefile(string);
 void read_V(const std::string &, map<string,map<int, map<char,double> >> &);
 ///templated functions
 template <typename Type>
