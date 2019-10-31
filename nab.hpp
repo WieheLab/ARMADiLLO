@@ -95,8 +95,7 @@ public:
     if(gene.compare("J")==0)
       {
 	//sub_sequence=Jgene_sequence;
-	  
-	sub_sequence="CTACTGGTACTTCGATCTC"+UCA_sequence.substr(cdr_length+Vgene_length);
+	sub_sequence=UCA_sequence.substr(cdr_length+Vgene_length);
       }
     else
       {
@@ -215,6 +214,10 @@ public:
 	    Jgene_length++;
 	    lastChar="J";
 	  }
+	else if(markup_string[j]=='-')
+	  {
+	    _markup_mask[j]="G";
+	  }
       }
     return _markup_mask;
   }
@@ -228,7 +231,9 @@ public:
       }
     for(int j=0;j<markup_string.length();j++)
       {
-	if(ignore_CDR3 && markup_mask[j]=="C")
+	if(UCA_sequence.substr(j,1)=="-")
+	  shield_mutations[j]=true;
+	else if(ignore_CDR3 && markup_mask[j]=="C")
 	   shield_mutations[j]=true;
 	else if(ignoreV && markup_mask[j]=="V")
 	  shield_mutations[j]=true;
@@ -250,11 +255,12 @@ public:
 	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
 	return -1;
       }
-    if (error_status){
-      log_cerr+= "SMUA incorrectly formatted for sequence " + sequence_name + ". Skipping that sequence\n"; 
-      log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
-      return -1;
-    }
+    if (error_status)
+      {
+	log_cerr+= "SMUA incorrectly formatted for sequence " + sequence_name + ". Skipping that sequence\n"; 
+	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
+	return -1;
+      }
     //cerr << new_UCA_sequence << "\n" << new_sequence << "\n"; 
     UCA_sequence=new_UCA_sequence;
     sequence=new_sequence;
@@ -265,14 +271,21 @@ public:
   void replaceUCA(map<string,string> &dna_to_aa_map,string input_UCA_sequence, bool ignore_warnings)
   {
     string new_sequence="", new_UCA_sequence="", new_markup_string="";
+    boost::erase_all(input_UCA_sequence,"-");
+    boost::erase_all(UCA_sequence,"-");
+    
     replace_UCA_sequence_in_SMUA(sequence, UCA_sequence, markup_string, input_UCA_sequence, new_sequence, new_UCA_sequence, new_markup_string, ignore_warnings);
     
     string new_UCA_aa_sequence="",input_UCA_aa_sequence="",UCA_aa_sequence="";
     translate_dna_to_aa(new_UCA_sequence, new_UCA_aa_sequence, 1, dna_to_aa_map);
     translate_dna_to_aa(input_UCA_sequence, input_UCA_aa_sequence, 1, dna_to_aa_map);
     translate_dna_to_aa(UCA_sequence, UCA_aa_sequence, 1, dna_to_aa_map);
-    cout << "inp_UCA: " << input_UCA_aa_sequence << "\n    UCA: " << UCA_aa_sequence << "\nnew_UCA: " << new_UCA_aa_sequence << "\n"; 
-    cout << ">inp_UCA\n" << input_UCA_sequence << "\n>UCA\n" << UCA_sequence << "\n>new_UCA\n" << new_UCA_sequence << "\n";
+    //cout << "inp_UCA: " << input_UCA_aa_sequence << "\n    UCA: " << UCA_aa_sequence << "\nnew_UCA: " << new_UCA_aa_sequence << "\n"; 
+    //cout << ">inp_UCA\n" << input_UCA_sequence << "\n>UCA\n" << UCA_sequence << "\n>new_UCA\n" << new_UCA_sequence << "\n";
+    log_cout += "inp_UCA: " + input_UCA_aa_sequence + "\n    UCA: " + UCA_aa_sequence + "\nnew_UCA: " + new_UCA_aa_sequence + "\n"; 
+    log_cout += ">inp_UCA\n" + input_UCA_sequence + "\n>UCA\n" + UCA_sequence + "\n>new_UCA\n" + new_UCA_sequence + "\n";
+    log_cout +=">old markup\n"+markup_string+"\n";
+    log_cout +=">new markup\n"+new_markup_string+"\n";
     UCA_sequence=new_UCA_sequence;
     sequence=new_sequence;
     markup_string=new_markup_string;

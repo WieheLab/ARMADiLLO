@@ -309,6 +309,7 @@ int main(int argc, char *argv[])
 	 {
 	   thread_list[j].join();
 	 }
+       //getchar();
      }
 
    if (arguments.quick==true)
@@ -341,24 +342,14 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
   if(arg.input_UCA_sequence!="")
     {
       nab.replaceUCA(dna_to_aa_map,arg.input_UCA_sequence,arg.ignore_warnings);
+      nab.markup_mask=nab.parseMarkup();
     }
   nab.createShield(arg.ignore_CDR3,arg.ignoreV,arg.ignoreJ);
+
   if(arg.quick)
     {
       //nab.Jgene_sequence=J_genes_list(arg.species,nab.Jgene);
       nab.replaceTable(S5F_5mers,dna_to_aa_map, v_input,arg);
-      /*if(!quickRun)
-	{
-	  map<int, map<char,double>> freqTable;
-	  cerr << "Carrying out simulation of sequences\n";
-	  nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
-	  freqTable=nab.generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,"V");
-	  string vTableName=nab.Vgene+"_"+to_string(nab.Vgene_mut_count)+".freq_table.txt";
-	  v_input[vTableName]=freqTable;	  
-	  freqTable=nab.generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,"J");
-	  string jTableName=nab.Jgene+"_"+to_string(nab.Jgene_mut_count)+".freq_table.txt";
-	  v_input[jTableName]=freqTable;	  
-	  }*/
       if(arg.output_seqs)//write out simulated sequences if argument is true
 	cerr << "No sequences generated during quick generations\n";
     }
@@ -367,7 +358,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
       if(arg.output_seqs)//write out simulated sequences if argument is true
 	{
-		nab.outputSimSeqs(arg.max_iter,arg.branches);
+	  nab.outputSimSeqs(arg.max_iter,arg.branches);
 	}
     }
   nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
@@ -640,7 +631,11 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
       last_mut_scores=mut_scores;
       last_sum_mut_scores=sum_mut_scores;
 
-      if(mut_scores.size() != shield_mutations.size()){cerr << "FATAL ERROR: shield mutations vector is not same size as mut_scores. Exiting\n"; exit(1);} 
+      if(mut_scores.size() != shield_mutations.size())
+	{
+	  cerr << "FATAL ERROR: shield mutations vector is not same size as mut_scores. Exiting\n";
+	  exit(1);
+	} 
       // cerr << j << "\tsum of mut scores: " << sum_mut_scores << "\n"; 
       ///convert mutability scores to probability of mutating position  
       vector<double> mut_probability_ladder(sequence.length(),0); ///cumulative distribution of probabilities
@@ -649,35 +644,49 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
       for(int i=1; i<sequence.length(); i++)
 	{
 	  mut_probability_ladder[i]=mut_probability_ladder[i-1]+(mut_scores[i]/(double) sum_mut_scores); 
-	  //	    cerr << i << "\t" << sequence[i] << "\t" << (mut_scores[i]/(double) sum_mut_scores) << "\t" << mut_probability_ladder[i] << "\n"; 
 	}
       //clock_t mut_ladder=clock();
       ///draw position randomly according to probability ladder
       double R=dis(gen);
-      //   cerr << "R: " << R << "\n"; 
+      //cerr << "R: " << R << "\t"; 
       int mutate_position_i=-1;
+
       for(int i=0; i<mut_probability_ladder.size(); i++)  ///OPTIMIZE: combine the two loops into one
 	{
-	  if (R<mut_probability_ladder[i])
+	  if (R<mut_probability_ladder[i] && !shield_mutations[i])
 	    {
 	      mutate_position_i=i;
 	      break;
 	    }
+	  if(mut_probability_ladder.size()-1==i)
+	    {
+	      while(shield_mutations[i])
+		{
+		  i--;
+		}
+	      mutate_position_i=i;
+	      break;
+	    }
 	}
-      //    int d; cin >> d;
+
       //end=clock();
       //elapsed = double(end - begin);// / CLOCKS_PER_SEC;
       //cerr << "LADDER BUILDING: " << elapsed << "\n";
       //catch when mutate_position_i is not set 
       if (mutate_position_i == -1)
 	{
-	  cerr << "FATAL ERROR: Setting mutation_position_i failed\n"; exit(1);
+	  cerr << "FATAL ERROR: Setting mutation_position_i failed-684\n";
+	  exit(1);
 	}
 
       last_mutate_position=mutate_position_i;
-
-      if (sequence.substr(mutate_position_i,1) == "-"){cerr << "mutate position should never be a gap\n"; int d; cin >> d; }
-
+      
+      if (sequence.substr(mutate_position_i,1) == "-")
+	{
+	  cerr << "mutate position should never be a gap\n";
+	  //int d; cin >> d;
+	}
+      
       //cerr << j << "\t" << R << "\t" << mutate_position_i << "\t" << sequence[mutate_position_i] << "\t" << mut_scores[mutate_position_i] << "\t"; 
 
       ///mutate position according to substitution model
@@ -726,10 +735,10 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
 	  cuml+=it->second;
 	}
       if (base_to_mutate_to == 'X'){
-	cerr << "should not   t an X ever, paused\n"; 
+	cerr << "should not be an X ever, paused\n"; 
 	cerr << "A: " << substitution_probs['A'] << " C: " << substitution_probs['C'] << " G: " << substitution_probs['G'] << " T: " <<  substitution_probs['T'] << "\n"; 
 	cerr << j << "\t" << mutate_position_i << "\t" << sequence[mutate_position_i] << "\n"; 
-	int d; cin >> d; 
+	//int d; cin >> d; 
       }
       string sequence_copy=sequence;
       sequence[mutate_position_i]=base_to_mutate_to;
@@ -1001,9 +1010,6 @@ void process_fasta_sequence_to_seq_vector(string &sequence,vector<Seq> &seq_vect
   return;
 }
 
-
-
-
 void load_S5F_files(string mutability_filename, string substitution_filename, map<string, S5F_mut> &S5F_5mers)
 {
   //Open mutability CSV and read in
@@ -1156,8 +1162,6 @@ void correct_for_fivemer_with_gap(int i, string sequence, string &new_fivemer)
   
   return;
 }
-
-
 
 void cleanup_SMUA_sequences(string sequence_name, string markup_header, string UCA_sequence, string sequence, string markup, string &new_UCA_sequence, string &new_sequence, string &new_markup, string species, string chain_type, int &number_of_replacements, bool &error_status)
 {
@@ -1801,7 +1805,6 @@ void vector2D_to_3D(vector<vector<Type> > &vector2D, int interval, vector<vector
   //cerr << vector3D.size() << " by " << vector3D[0].size() << " by " << vector3D[0][0].size() << "\n"; 
   return;
 }
-
 
 template <typename Type>
 string convert_to_string(Type t)
