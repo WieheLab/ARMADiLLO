@@ -267,6 +267,11 @@ int main(int argc, char *argv[])
    map<string,string> dna_to_aa_map;
    get_aa_tranx_map(dna_to_aa_map);
 
+   if(!fexists("AMA.css"))
+     writeAMA();
+   if(!fexists("sequence_color.css"))
+     writeColor();
+   
    ///read input sequence alignment
    map <string, string> sequences;
    vector <string> sequence_names;   
