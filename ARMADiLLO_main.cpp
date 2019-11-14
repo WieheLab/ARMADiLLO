@@ -417,13 +417,13 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
 
   file_string+="<br><br><br>\n";
   file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
-  file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">20-10\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">10-2\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">2-1\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">1.0-0.1\%&nbsp;&nbsp;</td>";
-  file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">0.10-0.01\%&nbsp;&nbsp;</td> ";
-  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\"> </div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";
+  file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">20-10\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">10-2\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">2-1\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">1.0-0.1\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">0.10-0.01\%&nbsp;&nbsp;</td> ";
+  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";
   
   //file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
   file_string+="</body>\n</html>\n"; 
@@ -456,6 +456,78 @@ void print_freq_table_to_file(string filename,  map<int, map<char,double> > &pos
     }
   file_out.close();
  
+}
+
+
+void print_HTML_freq_table_to_file(string filename,  map<int, map<char,double> > &positional_aa_freqs,string aa_sequence,vector<double> &color_ladder)
+{
+  vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
+  string file_string="";
+  file_string+="<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>\n"; 
+  file_string+="<head>\n"; 
+  file_string+=" <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n";
+  file_string+=" <title>Antibody Mutation Analysis</title>\n"; 
+  file_string+=" <link rel='stylesheet' href='sequence_color.css' />\n";
+  //file_string+=" <link rel='stylesheet' href='AMA.css' />\n";
+  file_string+="<style>\n";
+  file_string+=".tooltip{\n position: relative;\ndisplay: inline-block;\n}";
+  file_string+=".tooltiptext {\n visibility: hidden;\n  width: 100px;\n  background-color: #fffff5;\n color: #000000;\n  font-size: 12px;\n font-family:'Monospace';\n  text-align: center;\n  padding: 5px 0;\n position: absolute;\n  top: 100%;\n  left: 50%;\n   margin-left: -30px;\n   z-index: 1;\n}";
+  file_string+=".tooltiptext::after {\n   content: \" \";\n   position: absolute;\n    bottom: 100%;\n    left: 50%;\n    margin-left: -5px;\n    border-width: 5px;\n    border-style: solid;\n   border-color: transparent transparent black transparent;\n}";
+  file_string+=".tooltip:hover .tooltiptext {\n    visibility: visible;\n}\n";
+  file_string+=" </style>\n";
+  file_string+="</head>\n"; 
+  file_string+="<body>\n";
+  
+
+  file_string+="<table cellspacing=\"0\" border=\"1\">\n<colgroup span=\"1\" width=\"100\"></colgroup><colgroup span=\"20\" width=\"60\"></colgroup>\n<tr>\n";
+  file_string+="<td height=\"20\" align=\"left\"></td>\n";
+  for(int i=0; i<amino_acids.size(); i++)
+    {
+      string s;
+      file_string+= "<td align=\"center\"><b>" +s.replace(0,1,1,amino_acids[i])+"</b></td>\n";
+      }
+  file_string+= "</tr>\n";
+  
+  for(int j=0; j<positional_aa_freqs.size(); j++)
+    {
+      //html_file_out << j+1;
+     
+      file_string+= "<tr><td height=\"20\" align=\"center\" sdval=\"3\"><b>"+to_string(j+1)+":"+aa_sequence[j] +"</b></td>\n";
+      for(int i=0; i<amino_acids.size(); i++)
+	{
+	  char aa_char[10];
+	  sprintf(aa_char,"%.2f%%",100*positional_aa_freqs[j][amino_acids[i]]);
+	  string aa_str(aa_char);
+	  
+	  for(int k=0; k<color_ladder.size(); k++)
+	    {
+	      if (positional_aa_freqs[j][amino_acids[i]] <= color_ladder[k])
+		{
+		  ostringstream ss;
+		  if(aa_sequence[j]=='X')
+		    file_string+= "<td height=\"20\" align=\"center\" sdval=\"3\" class=\"color_cat8\"><div class=\"tooltip\">"+aa_str;
+		  else
+		    file_string+= "<td height=\"20\" align=\"center\" sdval=\"3\" class=\"color_cat"+to_string(k+1)+"\"><div class=\"tooltip\">"+aa_str;
+		  break;
+		}
+	    }
+
+	  char tooltip_char[75];
+	  sprintf(tooltip_char,"pos:%d<br>%c->%c : %.2f%%",j+1,aa_sequence[j],amino_acids[i],100*positional_aa_freqs[j][amino_acids[i]]);
+	  string tooltip(tooltip_char);
+	  
+	  file_string+="<span class=\"tooltiptext\"><b>"+tooltip+"</b><br></span></div></td>\n";
+
+	}
+      file_string+= "</tr>\n";
+    }
+
+    ofstream html_file_out;
+  replace_all(filename,"txt","html");
+  html_file_out.open(filename);
+  html_file_out<<file_string;
+  html_file_out.close();
+  
 }
 
 void print_output(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff)

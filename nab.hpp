@@ -386,6 +386,7 @@ public:
 	print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
       }
     print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
+    print_HTML_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs,UCA_aa_sequence,color_ladder);
   }
 
   void SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
