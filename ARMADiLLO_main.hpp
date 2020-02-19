@@ -86,6 +86,7 @@ struct Arguments
   string species="human";
   string chain_type="heavy";
   string input_UCA_sequence="";
+  string aaMuts="";
   vector<double> color_ladder{0.0001, 0.001, 0.01, 0.02, 0.10, 0.20, 0.5, 1};
   int numbMutations=-1;
   double low_prob_cutoff=.02;

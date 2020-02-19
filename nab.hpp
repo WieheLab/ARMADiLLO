@@ -564,6 +564,34 @@ public:
       }
     return true;
   }
+
+  void countAAPairs(string aaMuts)
+  {
+    vector<string> aaMutsVector;
+    split(aaMutsVector,aaMuts,boost::is_any_of(","));
+    int pairCount=0;
+    for(int j=0;j<mature_mutant_sequences.size();j++)
+    {
+      int subcount=0;
+	for(int i=0;i<aaMutsVector.size();i++)
+	  {
+	    string startNT=aaMutsVector[i].substr(0,1);
+	    int NTpos=stoi(aaMutsVector[i].substr(1,aaMutsVector[i].size()-2));
+	    string endNT=aaMutsVector[i].substr(aaMutsVector[i].size()-1,1);
+	    if(mature_mutant_sequences[0].substr(NTpos-1,1)==endNT)
+	      {
+		cout << endNT<<" found ";
+		subcount++;
+	      }
+	    else
+	      cout << endNT<<" not found ";
+	  }
+	cout << subcount <<"\t"<<pairCount<<"\t"<<aaMutsVector.size()<<"\n";
+	if (subcount==aaMutsVector.size())
+	  pairCount++;
+	}
+    log_cout+=sequence_name+" Percent of sequences with mutants:  "+ to_string(pairCount/mature_mutant_sequences.size()) +"\n";
+  }
   
   void outputSimSeqs(int max_iter, int branches)//function to write out the simulated sequences
   {

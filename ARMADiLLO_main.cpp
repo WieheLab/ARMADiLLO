@@ -224,6 +224,10 @@ int main(int argc, char *argv[])
 	  cout << "reseting AMO file\n";
 	  resetARMOfile=true;
 	}
+      if(arg=="-findpairs")
+	{
+	  arguments.aaMuts=next_arg;
+	}
       i++;
     }
   
@@ -375,6 +379,10 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
 	{
 	  nab.outputSimSeqs(arg.max_iter,arg.branches);
 	}
+    }
+  if(arg.aaMuts!="")
+    {
+      nab.countAAPairs(arg.aaMuts);
     }
   nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
   nab.printlog();
