@@ -357,14 +357,14 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     {
       if (nab.cleanSMUA(arg.species,arg.chain_type,arg.replace_J_upto)<0)
 	return;
+      vector<bool> _shield_mutations(nab.markup_string.length(),false);
+	nab.shield_mutations=_shield_mutations;
     }
   if(arg.input_UCA_sequence!="")
     {
       nab.replaceUCA(dna_to_aa_map,arg.input_UCA_sequence,arg.ignore_warnings);
       nab.markup_mask=nab.parseMarkup();
     }
-  nab.createShield(arg.ignore_CDR3,arg.ignoreV,arg.ignoreJ);
-
   if(arg.quick)
     {
       //nab.Jgene_sequence=J_genes_list(arg.species,nab.Jgene);
@@ -374,6 +374,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     }
   else
     {
+
       nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
       if(arg.output_seqs)//write out simulated sequences if argument is true
 	{
@@ -703,7 +704,6 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
       get_mutability_scores(S5F_model, sequence, last_mutate_position, is_shielded, shield_mutations, last_mut_scores, mut_scores, last_sum_mut_scores, sum_mut_scores);
       last_mut_scores=mut_scores;
       last_sum_mut_scores=sum_mut_scores;
-
       if(mut_scores.size() != shield_mutations.size())
 	{
 	  cerr << "FATAL ERROR: shield mutations vector is not same size as mut_scores. Exiting\n";
@@ -1233,12 +1233,17 @@ void correct_for_fivemer_with_gap(int i, string sequence, string &new_fivemer)
 
 void cleanup_SMUA_sequences(string sequence_name, string markup_header, string UCA_sequence, string sequence, string markup, string &new_UCA_sequence, string &new_sequence, string &new_markup, string species, string chain_type, int &number_of_replacements, bool &error_status)
 {
-  if ( ((species =="human") && (chain_type != "heavy")) || ((species == "rhesus")&&(chain_type == "lambda")) ){ cerr << "CLEANUP ONLY WORKS FOR: Human/Rhesus Heavy and Rhesus Kappa for now. Sorry. Exiting.\n"; exit(1);}
+
+  if ( string("human").compare(species)){ cerr << "CLEANUP ONLY WORKS FOR: Human sepeices. Sorry. Exiting.\n"; exit(1);}
+
+  //if ( species =="human" ){ cerr << "CLEANUP ONLY WORKS FOR: Human sepeices. Sorry. Exiting.\n"; exit(1);}
+  //if ( ((species =="human") && (chain_type != "heavy")) || ((species == "rhesus")&&(chain_type == "lambda")) ){ cerr << "CLEANUP ONLY WORKS FOR: Human/Rhesus Heavy and Rhesus Kappa for now. Sorry. Exiting.\n"; exit(1);}
 
   new_UCA_sequence=UCA_sequence;
   new_sequence=sequence;
   new_markup=markup;
   number_of_replacements=0;
+
   if ((UCA_sequence.length() != sequence.length())||(sequence.length()!=markup.length())||(UCA_sequence.length()!=markup.length()))
     {
       cerr << "FATAL ERROR: UCA sequence, sequence and markup strings are not same length\n";

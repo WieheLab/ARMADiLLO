@@ -247,6 +247,7 @@ public:
     string new_sequence="", new_UCA_sequence="", new_markup_string="";
     int number_of_replacements=0;
     bool error_status=false;
+
     log_cerr += "Cleaning SMUA step\n"; 
     cleanup_SMUA_sequences(sequence_name, markup_header, UCA_sequence, sequence, markup_string, new_UCA_sequence, new_sequence, new_markup_string, species, chain_type, number_of_replacements, error_status);
     if (number_of_replacements>replace_J_upto)
@@ -265,6 +266,7 @@ public:
     UCA_sequence=new_UCA_sequence;
     sequence=new_sequence;
     markup_string=new_markup_string;
+
     return 0;
   }
 
@@ -407,7 +409,7 @@ public:
       _mut_count-=Jgene_mut_count;
     if(ignoreV && !setMutcount)
       _mut_count-=Vgene_mut_count;
-    
+    cout <<"line 418\n";
     //log_cerr += "Simulating maturation of "+sequence_name+"\n";
     for(int j=1; j<=max_iter; j++)
       {
