@@ -311,8 +311,14 @@ int main(int argc, char *argv[])
    //map<string, map<string, string> > J_genes=J_genes_list();
    //iterate through the SMUA file and perform mutation analysis for each sequence
    //double total_elapsed_time=0;
-   if (SMUA_end==-1){SMUA_end=SMUA_alignments_and_markup.size();}
-   if (SMUA_end>SMUA_alignments_and_markup.size()){SMUA_end=SMUA_alignments_and_markup.size();}
+   if (SMUA_end==-1)
+     {
+       SMUA_end=SMUA_alignments_and_markup.size();
+     }
+   if (SMUA_end>SMUA_alignments_and_markup.size())
+     {
+       SMUA_end=SMUA_alignments_and_markup.size();
+     }
    //for(int i=0; i<SMUA_alignments_and_markup.size(); i++)
    int MAX_THREADS=num_threads;
    int size=SMUA_end;

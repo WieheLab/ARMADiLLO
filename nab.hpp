@@ -41,6 +41,8 @@ public:
     UCA_sequence=Entry[3];
     markup_header=Entry[4];
     markup_string=Entry[5];
+    to_upper(sequence);
+    to_upper(UCA_sequence);
     mut_count=arg.numbMutations;
     ignore_CDR3=arg.ignore_CDR3;
     ignoreJ=arg.ignoreJ;
