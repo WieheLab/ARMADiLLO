@@ -411,7 +411,6 @@ public:
       _mut_count-=Jgene_mut_count;
     if(ignoreV && !setMutcount)
       _mut_count-=Vgene_mut_count;
-    cout <<"line 418\n";
     //log_cerr += "Simulating maturation of "+sequence_name+"\n";
     for(int j=1; j<=max_iter; j++)
       {

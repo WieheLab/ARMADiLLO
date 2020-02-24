@@ -626,3 +626,15 @@ bool fexists(const std::string& filename)
   std::ifstream ifile(filename.c_str());
   return (bool)ifile;
 }
+
+
+
+int countChar(string sample, char findIt)
+{
+    vector<int> characterLocations;
+    for(int i =0; i < sample.size(); i++)
+        if(sample[i] == findIt)
+            characterLocations.push_back(i);
+
+    return characterLocations.size();
+}

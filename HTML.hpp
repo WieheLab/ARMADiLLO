@@ -854,3 +854,4 @@ static const unsigned char AMA_css[] = {
 
 bool writeAMA();
 bool writeColor();
+bool writeError(string,string);

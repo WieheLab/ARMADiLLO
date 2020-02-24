@@ -358,6 +358,27 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
 {
   //double total_elapsed_time=0;
   //clock_t begin=clock();
+  
+  string seq=SMUA_entries[1];
+  for (auto & c: seq) c = toupper(c);
+    
+  int Acount = countChar(seq,'A');
+  int Gcount = countChar(seq,'G');
+  int Ccount = countChar(seq,'C');
+  int Tcount = countChar(seq,'T');
+  int dashcount = countChar(seq,'-');
+
+  if(seq.size()>Acount+Gcount+Ccount+Tcount+dashcount)
+    {
+      cout << "Unidentified nucleotide in sequence: "<<SMUA_entries[0]<<endl;
+      cout <<"ARMADiLLO cannot accept amino acid sequences or nucleotide sequences with ambuguity codes"<<endl;
+      cout << "Skipping sequence: "<<SMUA_entries[0]<<endl;
+      
+      writeError(SMUA_entries[0]+".tiles.html",SMUA_entries[0]);
+      writeError(SMUA_entries[0]+".ARMADiLLO.html",SMUA_entries[0]);
+      return;
+    }
+    
   NabEntry nab(SMUA_entries,arg);
   if(arg.clean_SMUA_first)
     {
@@ -536,8 +557,8 @@ void print_HTML_freq_table_to_file(string filename,  map<int, map<char,double> >
 	}
       file_string+= "</tr>\n";
     }
-
-    ofstream html_file_out;
+  file_string+="<body>\n</html>\n"; 
+  ofstream html_file_out;
   replace_all(filename,"txt","html");
   html_file_out.open(filename);
   html_file_out<<file_string;

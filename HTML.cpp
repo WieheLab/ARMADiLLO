@@ -106,3 +106,28 @@ bool writeColor()
       return false;
   return true;
 }
+
+bool writeError(string filename, string seqName)
+{
+
+  string outString;
+  
+  outString+="<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>\n";
+  outString+="<head>\n";
+  outString+="<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n";
+  outString+="<title>Antibody Mutation Analysis</title>\n";
+  outString+="<link rel='stylesheet' href='AMA.css' />\n";
+  outString+="</head>\n";
+  outString+="<body>\n";
+  
+  outString+="<br><br><div align=\"center\"><font size=6><b>\n";
+  outString+= "Unidentified nucleotide in sequence: "+seqName+" <br>\n";
+  outString+="ARMADiLLO cannot accept amino acid sequences or nucleotide sequences with ambuguity codes\n<br>\n";
+  outString+="</font>\n</b>\n</div>\n</body>\n</html>";
+
+  ofstream file_out;
+  file_out.open(filename.c_str());
+  file_out << outString;
+  file_out.close();
+  return true;
+}
