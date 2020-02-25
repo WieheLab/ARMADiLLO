@@ -368,8 +368,8 @@ public:
 	all_sequences.push_back(UCA_seq_vector);
 	all_sequences.push_back(seq_vector);
 	vector<string> sequence_names;
-	sequence_names.push_back(UCA_sequence_name);
-	sequence_names.push_back(sequence_name);
+	sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length())))+"|UCA");//UCA_sequence_name
+	sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
 	print_output(output_filename, all_sequences, sequence_names, line_wrap_length, low_prob_cutoff);
 	
 	///print tiles as HTML
@@ -386,7 +386,7 @@ public:
 	all_aa_sequences.push_back(aa_UCA_seq_vector);
 	all_aa_sequences.push_back(aa_seq_vector);
 	aa_sequence_names.push_back("UCA");
-	aa_sequence_names.push_back(sequence_name);
+	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
 	print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
       }
     print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);

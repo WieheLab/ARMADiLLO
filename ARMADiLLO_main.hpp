@@ -107,7 +107,7 @@ void print_output_for_tiles_view(string, vector<vector<Seq> > &, vector<string>,
 void print_freq_table_to_file(string,  map<int, map<char,double> > &);
 void print_HTML_freq_table_to_file(string,  map<int, map<char,double> > &, string, vector<double> &);
 ///functions
-void read_SMUA_file(string, vector<vector<string> > &);
+//void read_SMUA_file(string, vector<vector<string> > &);
 void load_S5F_files(string,string, map<string,S5F_mut> &);
 void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &);
 vector<double> estimate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);

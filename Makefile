@@ -15,11 +15,14 @@ else #links for linux
 endif
 
 
-ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o #linking of ARMADiLLO
-	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o ${libs}
+ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o #linking of ARMADiLLO
+	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o ${libs}
 
-ARMADiLLO_main.o: ARMADiLLO_main.cpp ARMADiLLO_main.hpp HTML.hpp utilities.hpp nab.hpp
+ARMADiLLO_main.o: ARMADiLLO_main.cpp ARMADiLLO_main.hpp HTML.hpp utilities.hpp nab.hpp readInputFiles.hpp
 	${cxx} ${flags} ${links} -c ARMADiLLO_main.cpp
+
+readInputFiles.o: readInputFiles.cpp readInputFiles.hpp utilities.hpp
+	${cxx} ${flags} ${links} -c readInputFiles.cpp
 
 utilities.o: utilities.cpp utilities.hpp
 	${cxx} ${flags} ${links} -c utilities.cpp
@@ -28,6 +31,6 @@ HTML.o: HTML.cpp HTML.hpp
 	${cxx} ${flags} ${links} -c HTML.cpp
 
 clean: #cleaning out old compiled files
-	rm -f ARMADiLLO_main.o utilities.o HTML.o ARMADiLLO
+	rm -f ARMADiLLO_main.o utilities.o HTML.o ARMADiLLO readInputFiles.o
 
 #END OF MAKEFILE

@@ -11,8 +11,7 @@
 #include <map>
 #include <set>
 #include <boost/algorithm/string.hpp>
-#include "HTML.hpp"
-#include "utilities.hpp"
+
 //#include <algorithm>
 #include <boost/filesystem/operations.hpp>
 //#include "boost/filesystem.hpp"
@@ -29,7 +28,10 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include "ARMADiLLO_main.hpp"
+#include "HTML.hpp"
+#include "utilities.hpp"
 #include "nab.hpp"
+#include "readInputFiles.hpp"
 
 using namespace std;
 using namespace boost;
@@ -290,9 +292,7 @@ int main(int argc, char *argv[])
      }
    else if (UCAtype.compare("partis")==0)
      {
-       cout << "partis output is not supported at this time\nexiting"<<endl;
-       exit(1);
-       return 0;
+       read_PARTIS_file(SMUA_filename,SMUA_alignments_and_markup);
      }
    else
      {
@@ -395,9 +395,9 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
 
   if(seq.size()>Acount+Gcount+Ccount+Tcount+dashcount)
     {
-      cout << "Unidentified nucleotide in sequence: "<<SMUA_entries[0]<<endl;
-      cout <<"ARMADiLLO cannot accept amino acid sequences or nucleotide sequences with ambuguity codes"<<endl;
-      cout << "Skipping sequence: "<<SMUA_entries[0]<<endl;
+      cerr << "Unidentified nucleotide in sequence: "<<SMUA_entries[0]<<endl;
+      cerr <<"ARMADiLLO cannot accept amino acid sequences or nucleotide sequences with ambuguity codes"<<endl;
+      cerr << "Skipping sequence: "<<SMUA_entries[0]<<endl;
       
       writeError(SMUA_entries[0]+".tiles.html",SMUA_entries[0]);
       writeError(SMUA_entries[0]+".ARMADiLLO.html",SMUA_entries[0]);
@@ -410,7 +410,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       if (nab.cleanSMUA(arg.species,arg.chain_type,arg.replace_J_upto)<0)
 	return;
       vector<bool> _shield_mutations(nab.markup_string.length(),false);
-	nab.shield_mutations=_shield_mutations;
+      nab.shield_mutations=_shield_mutations;
     }
   if(arg.input_UCA_sequence!="")
     {
@@ -426,7 +426,6 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     }
   else
     {
-
       nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
       if(arg.output_seqs)//write out simulated sequences if argument is true
 	{
@@ -1182,52 +1181,7 @@ void load_S5F_files(string mutability_filename, string substitution_filename, ma
   return;
 }
 
-void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_markup)
-{
-  ifstream file(filename.c_str(), std::ios::in );
-  if (!file.is_open()) {cerr << "could not open " << filename << " ...exiting...\n"; exit(1);}
-  
-  vector<string> UA_markup_file_contents;
-  
-  string file_str;
-  while (!getline(file, file_str).eof())
-    {
-      chomp(file_str);
-      UA_markup_file_contents.push_back(file_str);
-    }
 
-  //cout << UA_markup_file_contents.size()<<"\n";
-  for(int i=0; i<UA_markup_file_contents.size(); i+=6)
-    {
-      string sequence_name, trimmed_sequence, uca_name, uca_sequence, markup_name, markup_sequence;
-      chomp(UA_markup_file_contents[i]);
-      chomp(UA_markup_file_contents[i+1]);
-      chomp(UA_markup_file_contents[i+2]);
-      chomp(UA_markup_file_contents[i+3]);
-      chomp(UA_markup_file_contents[i+4]);
-      chomp(UA_markup_file_contents[i+5]);
-
-      sequence_name=UA_markup_file_contents[i].substr(1);
-
-      trimmed_sequence=UA_markup_file_contents[i+1];
-      uca_name=UA_markup_file_contents[i+2].substr(1);
-      uca_sequence=UA_markup_file_contents[i+3];
-      markup_name=UA_markup_file_contents[i+4].substr(1);
-      markup_sequence=UA_markup_file_contents[i+5];
-
-      //store all in UA_alignments vector
-      vector<string> temp;
-      temp.push_back(sequence_name);
-		      
-      temp.push_back(trimmed_sequence);
-      temp.push_back(uca_name);
-      temp.push_back(uca_sequence);
-      temp.push_back(markup_name);
-      temp.push_back(markup_sequence);
-      UA_alignments_and_markup.push_back(temp);
-    }
-  return;
-}
 
 vector<pair<char, double > > sort_map_into_pair_vctr(map<char,double> &M)
 {
