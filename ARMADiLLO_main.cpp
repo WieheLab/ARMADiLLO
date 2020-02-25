@@ -79,6 +79,7 @@ int main(int argc, char *argv[])
   bool resetARMOfile=false;
   bool user_provided_random_seed=false;
   string amoFile="";
+  string UCAtype="cloanalyst";
 
   int num_threads=0, max_num_threads=thread::hardware_concurrency();
   bool estimate=false;
@@ -96,8 +97,14 @@ int main(int argc, char *argv[])
       //  if ((arg.substr(0,1)=="-")&&(next_arg.substr(0,1)=="-")){cerr << "incorrectly formatted cmdline\n"; exit(1);}
       if (arg == "-SMUA")
 	{
+	 UCAtype="cloanalyst"; 
 	  SMUA_filename=next_arg;
 	 }
+      if (arg=="-partis")
+	{
+	  UCAtype="partis";
+	  SMUA_filename=next_arg;
+	}
       if (arg == "-m")
 	{
 	  mutability_filename=next_arg;
@@ -233,7 +240,7 @@ int main(int argc, char *argv[])
   
   if( SMUA_filename.size()<1 || !fexists(SMUA_filename))
      {
-       cout << "Error in SMUA file\n\n";
+       cout << "Error in sequence file\n\n";
        helpMenu();
      }
    if(mutability_filename.size()<1 || !fexists(mutability_filename))
@@ -247,10 +254,6 @@ int main(int argc, char *argv[])
        helpMenu();
      }
    if ((num_threads==0)||(num_threads>max_num_threads)){num_threads=max_num_threads;}
-   cerr << "highlighting residues with less than " << arguments.low_prob_cutoff << " probability for mutation\n"; 
-
-   ///amino acids vector
-   vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
   
    ///setup random num generation
    std::random_device rd;
@@ -280,7 +283,29 @@ int main(int argc, char *argv[])
    map <string, string> sequences;
    vector <string> sequence_names;   
    vector<vector<string> > SMUA_alignments_and_markup;
-   read_SMUA_file(SMUA_filename, SMUA_alignments_and_markup);
+
+   if (UCAtype.compare("cloanalyst")==0)
+     {
+       read_SMUA_file(SMUA_filename, SMUA_alignments_and_markup);
+     }
+   else if (UCAtype.compare("partis")==0)
+     {
+       cout << "partis output is not supported at this time\nexiting"<<endl;
+       exit(1);
+       return 0;
+     }
+   else
+     {
+       cout << "unknown UCA collection sequence"<<endl;
+       cout << "exiting"<<endl;
+       exit(1);
+       return 0;
+     }
+   
+   cerr << "highlighting residues with less than " << arguments.low_prob_cutoff << " probability for mutation\n"; 
+   ///amino acids vector
+   vector<char> amino_acids={'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y'};
+   
    ///load S5F files
    map <string, S5F_mut> S5F_5mers;
    load_S5F_files(mutability_filename,substitution_filename, S5F_5mers);

@@ -61,7 +61,7 @@ public:
 };
 
 ///functions
-void read_SMUA_file(string, vector<vector<string> > &);
+void read_SMUA_file(string, vector<vector<string> > &,bool);
 void load_S5F_files(string,string, map<string,S5F_mut> &);
 void process_fasta_sequence_to_seq_vector(string &,vector<Seq> &);
 void process_SMUA_sequence_to_seq_vector(string &, string &, vector<Seq> &, map<string,string> &, map<string, S5F_mut> &);
@@ -676,7 +676,7 @@ void load_S5F_files(string mutability_filename, string substitution_filename, ma
 }
 
 
-void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_markup)
+void read_SMUA_file(string filename, vector<vector<string> > &UA_alignments_and_markup,bool fred)
 {
   ifstream file(filename.c_str(), std::ios::in );
   if (!file.is_open()) {cerr << "could not open " << filename << " ...exiting...\n"; exit(1);}
