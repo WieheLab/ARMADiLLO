@@ -292,7 +292,21 @@ int main(int argc, char *argv[])
      }
    else if (UCAtype.compare("partis")==0)
      {
-       read_PARTIS_file(SMUA_filename,SMUA_alignments_and_markup);
+       int pos =SMUA_filename.find_last_of(".");
+       string ext =SMUA_filename.substr(pos+1);
+       if(string("csv").compare(ext)==0)
+	 {
+	 read_PARTIScsv_file(SMUA_filename,SMUA_alignments_and_markup);
+	 }
+       else if(string("yaml").compare(ext)==0)
+	 {
+	   read_PARTISyaml_file(SMUA_filename,SMUA_alignments_and_markup);
+	 }
+       else
+	 {
+	   cerr << "Unidentified partis file type.\n ARMADiLLO supports yaml or csv file types from partis"<<endl;
+	   exit(1);
+	 }
      }
    else
      {
@@ -398,7 +412,6 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       cerr << "Unidentified nucleotide in sequence: "<<SMUA_entries[0]<<endl;
       cerr <<"ARMADiLLO cannot accept amino acid sequences or nucleotide sequences with ambuguity codes"<<endl;
       cerr << "Skipping sequence: "<<SMUA_entries[0]<<endl;
-      
       writeError(SMUA_entries[0]+".tiles.html",SMUA_entries[0]);
       writeError(SMUA_entries[0]+".ARMADiLLO.html",SMUA_entries[0]);
       return;
@@ -996,7 +1009,7 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
 		     {
 		       if ((v2[0][j].S5F_mut_score<.3)&&(v2[0][j].S5F_mut_score!=-1))
 			 {
-			   tdF.value="<img style='vertical-align:bottom' src='unusual.png' alt='Unsusual'/>";
+			   tdF.value="<img style='vertical-align:bottom' src='unusual.png' alt='^'/>";
 			 }
 		     }
 		 }

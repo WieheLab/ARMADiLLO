@@ -11,6 +11,7 @@
 #include <map>
 #include <set>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <algorithm>
 #include <boost/filesystem/operations.hpp>
 //#include "boost/filesystem.hpp"
@@ -25,4 +26,8 @@ using namespace boost::filesystem;
 
 void read_SMUA_file(string, vector<vector<string> > &);
 
-void read_PARTIS_file(string, vector<vector<string> > &);
+void read_PARTIScsv_file(string, vector<vector<string> > &);
+void read_PARTISyaml_file(string, vector<vector<string> > &);
+
+string cleanYAMLline(string);
+void cleanSeqs(string &,string &);
