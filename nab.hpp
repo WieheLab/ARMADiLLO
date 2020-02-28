@@ -398,6 +398,17 @@ public:
       print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
     if(outputMode=="HTML" || outputMode=="all")
       print_HTML_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs,UCA_aa_sequence,color_ladder);
+    if(outputMode=="simple" || outputMode=="full" || outputMode=="all")
+      {
+	cout << "simple text output"<<endl;
+	cout << sequence_name+".ARMADiLLO.fasta"<<endl;
+	simpleTextPrintOut(sequence_name+".ARMADiLLO.fasta",aa_sequence,UCA_aa_sequence,seq_vector);
+      }
+    if (outputMode=="full" || outputMode=="all")
+      {
+	cout << "full text output"<<endl;
+      }
+    
   }
 
   void SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
@@ -621,14 +632,43 @@ public:
     fileDNA_out.close();
   }
 
-  void fullTextPrintOut(string basename)
+
+  void simpleTextPrintOut(string filename,string &aa_sequence,string &UCA_aa_sequence,vector<Seq> &seq_vector)
   {
     
-  }
+    ofstream file_out;
+    file_out.open(filename.c_str());
+    file_out<<">"+sequence_name<<endl;
+    file_out<<UCA_aa_sequence<<endl;
+    file_out<<aa_sequence<<endl;
 
-  void simpleTextPrintOut(string basename)
-  {
-
+    for(int j=0; j<aa_sequence.size(); j+=1)
+      {
+	//if (shield_mutations[j]){continue;}
+	//cout << seq_vector[3*j].simulated_aa_positional_frequency<<"\t"<<seq_vector[3*j+1].simulated_aa_positional_frequency<<"\t"<<seq_vector[3*j+2].simulated_aa_positional_frequency<<endl;
+	//cout << j<<"\t"<<aa_sequence[j]<<"\t"<<UCA_aa_sequence[j]<<"\t";
+	if (aa_sequence[j]=='X'||UCA_aa_sequence[j]=='X')
+	  {
+	    file_out<<"X";
+	  }
+	else if (aa_sequence[j]==UCA_aa_sequence[j])
+	  {
+	    //cout << "same"<<endl;
+	    file_out<<"-";
+	  }
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.0001){file_out<<"*";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.001){file_out<<"!";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.01){file_out<<"#";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.02){file_out<<"%";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.10){file_out<<"^";}
+	else
+	  {
+	    file_out<<"&";
+	  }
+      }
+    file_out<<endl;
+    //getchar();
+    file_out.close();
   }
   
 };

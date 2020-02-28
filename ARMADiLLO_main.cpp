@@ -472,14 +472,6 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       nab.countAAPairs(arg.aaMuts);
     }
   nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
-  if(arg.outputMode=="simple")
-    {
-      cout << "simple text output"<<endl;
-    }
-  else if (arg.outputMode=="full" || arg.outputMode=="all")
-    {
-      cout << "full text output"<<endl;
-    }
   nab.printlog();
   //clock_t end=clock();
   //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
