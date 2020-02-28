@@ -162,6 +162,28 @@ int main(int argc, char *argv[])
 	  mutation_count_from_cmdline=atoi(next_arg.c_str());
 	  //where did this argument come from?
 	}
+      if(arg == "-no_text" || arg=="-notext")
+	{
+	  cout << "no output!"<<endl;
+	  getchar();
+	  arguments.outputMode="none";
+	}
+      if(arg == "-simple_text" || arg=="-simpletext")
+	{
+	  arguments.outputMode="simple";
+	}
+      if(arg == "-full_text" || arg=="-fulltext")
+	{
+	  arguments.outputMode="fulltext";
+	}
+      if(arg== "-HTML" || arg=="-html" || arg=="-web")
+	{
+	  arguments.outputMode="HTML";
+	}
+      if(arg== "-fulloutput" || arg=="-alloutput")
+	{
+	  arguments.outputMode="all";
+	}
       if (arg == "-c")
 	{
 	  arguments.low_prob_cutoff=atof(next_arg.c_str())/100.0;
@@ -276,9 +298,9 @@ int main(int argc, char *argv[])
    map<string,string> dna_to_aa_map;
    get_aa_tranx_map(dna_to_aa_map);
 
-   if(!fexists("AMA.css"))
+   if(!fexists("AMA.css") && (arguments.outputMode=="HTML" || arguments.outputMode=="all"))
      writeAMA();
-   if(!fexists("sequence_color.css"))
+   if(!fexists("sequence_color.css") && (arguments.outputMode=="HTML" || arguments.outputMode=="all"))
      writeColor();
    
    ///read input sequence alignment
@@ -450,6 +472,14 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       nab.countAAPairs(arg.aaMuts);
     }
   nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+  if(arg.outputMode=="simple")
+    {
+      cout << "simple text output"<<endl;
+    }
+  else if (arg.outputMode=="full" || arg.outputMode=="all")
+    {
+      cout << "full text output"<<endl;
+    }
   nab.printlog();
   //clock_t end=clock();
   //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;

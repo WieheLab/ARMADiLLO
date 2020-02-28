@@ -31,6 +31,7 @@ public:
   bool ignore_CDR3=false,ignoreJ=false,ignoreV=false,setMutcount=false;
   string log_cout="";
   string log_cerr="";
+  string outputMode="HTML";//options:HTML,none,simple,fulltext,all
   vector<bool> shield_mutations;
   ~NabEntry() {};
   NabEntry(vector<string>  Entry, Arguments arg)//constructor with number of mutations
@@ -47,6 +48,7 @@ public:
     ignore_CDR3=arg.ignore_CDR3;
     ignoreJ=arg.ignoreJ;
     ignoreV=arg.ignoreV;
+    outputMode=arg.outputMode;
     
     for(int j=0; j<UCA_sequence.length(); j++)
       {
@@ -370,7 +372,8 @@ public:
 	vector<string> sequence_names;
 	sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length())))+"|UCA");//UCA_sequence_name
 	sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
-	print_output(output_filename, all_sequences, sequence_names, line_wrap_length, low_prob_cutoff);
+	if(outputMode=="HTML"||outputMode=="all")
+	  print_output(output_filename, all_sequences, sequence_names, line_wrap_length, low_prob_cutoff);
 	
 	///print tiles as HTML
 	for(int j=0; j<seq_vector.size(); j+=3)
@@ -387,10 +390,14 @@ public:
 	all_aa_sequences.push_back(aa_seq_vector);
 	aa_sequence_names.push_back("UCA");
 	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
-	print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
+	if(outputMode=="HTML"||outputMode=="all")
+	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
+	
       }
-    print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
-    print_HTML_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs,UCA_aa_sequence,color_ladder);
+    if(outputMode=="all" || outputMode=="fulltext")
+      print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
+    if(outputMode=="HTML" || outputMode=="all")
+      print_HTML_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs,UCA_aa_sequence,color_ladder);
   }
 
   void SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
@@ -614,6 +621,16 @@ public:
     fileDNA_out.close();
   }
 
+  void fullTextPrintOut(string basename)
+  {
+    
+  }
+
+  void simpleTextPrintOut(string basename)
+  {
+
+  }
+  
 };
 
 #endif
