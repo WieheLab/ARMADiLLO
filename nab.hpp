@@ -378,7 +378,14 @@ public:
 	///print tiles as HTML
 	for(int j=0; j<seq_vector.size(); j+=3)
 	  {
-	    if (seq_vector[j].aa != UCA_seq_vector[j].aa){seq_vector[j].isMut=true;}else{seq_vector[j].isMut=false;}
+	    if (seq_vector[j].aa != UCA_seq_vector[j].aa)
+	      {
+		seq_vector[j].isMut=true;
+	      }
+	    else
+	      {
+		seq_vector[j].isMut=false;
+	      }
 	    UCA_seq_vector[j].isMut=false;
 	    UCA_seq_vector[j].simulated_aa_positional_frequency=1;
 	    aa_UCA_seq_vector.push_back(UCA_seq_vector[j]);
@@ -392,22 +399,21 @@ public:
 	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
 	if(outputMode=="HTML"||outputMode=="all")
 	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
+	if (outputMode=="fulltext" || outputMode=="all")
+	  {
+	    detailedTextPrintOut(sequence_name+".ARMADiLLO.Detailed.text",aa_sequence,UCA_aa_sequence,seq_vector,all_sequences);
+	  }
 	
       }
     if(outputMode=="all" || outputMode=="fulltext")
       print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
     if(outputMode=="HTML" || outputMode=="all")
       print_HTML_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs,UCA_aa_sequence,color_ladder);
-    if(outputMode=="simple" || outputMode=="full" || outputMode=="all")
+    if(outputMode=="simple" || outputMode=="fulltext" || outputMode=="all")
       {
-	cout << "simple text output"<<endl;
-	cout << sequence_name+".ARMADiLLO.fasta"<<endl;
 	simpleTextPrintOut(sequence_name+".ARMADiLLO.fasta",aa_sequence,UCA_aa_sequence,seq_vector);
       }
-    if (outputMode=="full" || outputMode=="all")
-      {
-	cout << "full text output"<<endl;
-      }
+
     
   }
 
@@ -644,9 +650,6 @@ public:
 
     for(int j=0; j<aa_sequence.size(); j+=1)
       {
-	//if (shield_mutations[j]){continue;}
-	//cout << seq_vector[3*j].simulated_aa_positional_frequency<<"\t"<<seq_vector[3*j+1].simulated_aa_positional_frequency<<"\t"<<seq_vector[3*j+2].simulated_aa_positional_frequency<<endl;
-	//cout << j<<"\t"<<aa_sequence[j]<<"\t"<<UCA_aa_sequence[j]<<"\t";
 	if (aa_sequence[j]=='X'||UCA_aa_sequence[j]=='X')
 	  {
 	    file_out<<"X";
@@ -656,21 +659,61 @@ public:
 	    //cout << "same"<<endl;
 	    file_out<<"-";
 	  }
-	else if (seq_vector[3*j].simulated_aa_positional_frequency<.0001){file_out<<"*";}
-	else if (seq_vector[3*j].simulated_aa_positional_frequency<.001){file_out<<"!";}
-	else if (seq_vector[3*j].simulated_aa_positional_frequency<.01){file_out<<"#";}
-	else if (seq_vector[3*j].simulated_aa_positional_frequency<.02){file_out<<"%";}
-	else if (seq_vector[3*j].simulated_aa_positional_frequency<.10){file_out<<"^";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.0001){file_out<<"6";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.001){file_out<<"5";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.01){file_out<<"4";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.02){file_out<<"3";}
+	else if (seq_vector[3*j].simulated_aa_positional_frequency<.10){file_out<<"2";}
 	else
 	  {
-	    file_out<<"&";
+	    file_out<<"1";
 	  }
       }
     file_out<<endl;
     //getchar();
     file_out.close();
   }
-  
+
+  void detailedTextPrintOut(string filename,string &aa_sequence,string &UCA_aa_sequence,vector<Seq> &seq_vector,vector<vector<Seq>> &all_sequences)
+  {
+    vector<vector<vector<Seq> > > split_all_sequences;
+    vector2D_to_3D(all_sequences,sequence.length(), split_all_sequences);
+    
+    ofstream file_out;
+    file_out.open(filename.c_str());
+    //file_out <<"\tUCA\t\t"<<sequence_name<<endl;
+    file_out <<"pos\tUCA AA\tUCA NT\tseq AA\tseq NT\t\tP(NT)\tP(AA)"<<endl;
+    for(int j=0;j<sequence.length();j++)
+      {
+	char c_str[10];
+	sprintf(c_str,"%.3f",split_all_sequences[0][1][j].S5F_mut_score);
+	string mut_score_str(c_str);
+	if (split_all_sequences[0][1][j].S5F_mut_score == -1)
+	  {
+	    mut_score_str="N/A";
+	  }
+	
+	string symbol="";
+	if(UCA_sequence[j]!=sequence[j])
+	  symbol="*";
+	if(j%3==0)
+	  {
+	    sprintf(c_str,"%.3f",split_all_sequences[0][1][j].simulated_aa_positional_frequency);
+	    file_out <<j<<"\t"<<UCA_aa_sequence[j/3]<<"\t"<<UCA_sequence[j]<<"\t"<<split_all_sequences[0][1][j].aa<<"\t"<<sequence[j]<<"\t"<<symbol<<"\t"<<mut_score_str<<"\t"<<c_str;
+	    if(split_all_sequences[0][1][j].simulated_aa_positional_frequency<0.02)
+	      file_out<<"<<";
+	    
+	    file_out<<endl;
+	  }
+	else
+	  file_out <<j<<"\t\t"<<UCA_sequence[j]<<"\t\t"<<sequence[j]<<"\t"<<symbol<<"\t"<<mut_score_str<<"\t "<<endl;
+
+      }
+    file_out<<endl;
+    file_out.close();
+    //cout << seq_vector[1]<<endl;
+  }
+
 };
 
 #endif

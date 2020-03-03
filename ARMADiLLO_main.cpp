@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 	{
 	  arguments.outputMode="simple";
 	}
-      if(arg == "-full_text" || arg=="-fulltext")
+      if(arg == "-text" || arg=="-fulltext")
 	{
 	  arguments.outputMode="fulltext";
 	}
