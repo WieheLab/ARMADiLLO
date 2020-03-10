@@ -682,6 +682,10 @@ public:
     ofstream file_out;
     file_out.open(filename.c_str());
     //file_out <<"\tUCA\t\t"<<sequence_name<<endl;
+    file_out <<"sequence name:\t"<<sequence_name<<endl;
+    file_out <<"markup header:\t"<<markup_header<<endl;
+    file_out<<endl;
+
     file_out <<"pos\tUCA AA\tUCA NT\tseq AA\tseq NT\t\tP(NT)\tP(AA)"<<endl;
     for(int j=0;j<sequence.length();j++)
       {
