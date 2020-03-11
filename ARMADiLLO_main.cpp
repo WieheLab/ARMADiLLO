@@ -60,6 +60,11 @@ void helpMenu()
   cout <<"\t -ignore_CDR3 : flag to ignore CDR3, default is false\n";
   cout <<"\t -ignore_V    : flag to ignore V, default is false\n";
   cout <<"\t -ignore_J    : lag to ignore J, default is false\n";
+  cout << "\t -threads [number] : sets the number of threads to use during processing - default is number of processors\n";
+  cout << "\t -simple_text : \n";
+  cout << "\t -text        : \n";
+  cout << "\t -HTML        : default\n";
+  cout << "\t -fulloutput  : \n";
   cout <<"\t -random_seed [provide a random seed]\n";
   exit(1);
 

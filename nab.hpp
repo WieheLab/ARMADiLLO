@@ -302,6 +302,9 @@ public:
     file_out.open(filename.c_str());
     file_out << ">" << sequence_name << "\n" << sequence << "\n>" << UCA_sequence_name << "\n" << UCA_sequence << "\n>" << markup_header <<  "\n" << markup_string << "\n";
     file_out.close();
+
+    vector<bool> _shield_mutations(markup_string.length(), false);
+    shield_mutations=_shield_mutations;
   }
 
   void printResults(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map, int line_wrap_length,double low_prob_cutoff,vector<double> &color_ladder)
