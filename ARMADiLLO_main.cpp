@@ -466,7 +466,12 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     }
   else
     {
-      nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
+      bool goodSim=nab.SimulateSequences(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,arg.max_iter,arg.branches,arg.lineage);
+      if(!goodSim)
+	{
+	  nab.printlog();
+	  return;
+	}
       if(arg.output_seqs)//write out simulated sequences if argument is true
 	{
 	  nab.outputSimSeqs(arg.max_iter,arg.branches);

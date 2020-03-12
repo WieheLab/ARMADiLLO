@@ -169,8 +169,9 @@ void get_aa_tranx_map(map<string,string> &dna_to_aa_tranx_map)
  
 }
 
-bool dna_sequence_has_stop_codon_in_reading_frame(string sequence)
+bool dna_sequence_has_stop_codon_in_reading_frame(string inSequence)
 {
+  string sequence=findAndReplaceAll(inSequence,"-","");
   for(int i=0; i<sequence.length(); i+=3)
     {
       if (sequence[i]=='T')
@@ -637,4 +638,22 @@ int countChar(string sample, char findIt)
             characterLocations.push_back(i);
 
     return characterLocations.size();
+}
+
+
+string findAndReplaceAll(std::string & data, std::string toSearch, std::string replaceStr)
+{
+	// Get the first occurrence
+	size_t pos = data.find(toSearch);
+	string newString = data;
+ 
+	// Repeat till end is reached
+	while( pos != std::string::npos)
+	{
+		// Replace this occurrence of Sub String
+		newString.replace(pos, toSearch.size(), replaceStr);
+		// Get the next occurrence from the current position
+		pos =newString.find(toSearch, pos + replaceStr.size());
+	}
+	return newString;
 }

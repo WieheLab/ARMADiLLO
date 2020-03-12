@@ -420,13 +420,13 @@ public:
     
   }
 
-  void SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
+  bool SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
   {
     if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence))
       {
 	log_cerr+= "germline has stop codon...skipping this sequence\n"; 
-	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\n"; 
-	return;
+	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A - UCA has stop codon\n"; 
+	return false;
       }
     int stop_codon_count=0;
     int _mut_count=mut_count;
@@ -487,6 +487,7 @@ public:
 	    mature_mutant_positional_aa_freqs[k][mature_mutant_sequences[j][k]]+=(1/((double)mature_mutant_sequences.size()));
 	  }
       }
+    return true;
   }
 
   bool replaceTable(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input, Arguments &arg)
