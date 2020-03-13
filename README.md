@@ -1,4 +1,4 @@
-![Alt text](logoD.png?raw=true "ARMADiLLO log"o)
+![Alt text](logos/logoD.png?raw=true "ARMADiLLO log")
 
 ARMADiLLO code base
 
