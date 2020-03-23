@@ -48,10 +48,22 @@ int stop_codon_count;
 void helpMenu()
 {
   cout << "ARMADiLLO\n\n";
-  cout << "USAGE:\n\t ARMADiLLO -SMUA [SMUA file] -m [S5F mutability file] -s [S5F substitution file] <opt arguments>\n\n";
-  cout << "required arguments:\n\t -SMUA [SMUA file]\n";
+  cout << "USAGE:\n\t ARMADiLLO <seq files> -m [S5F mutability file] -s [S5F substitution file] <opt arguments>\n\n";
+  cout << "required arguments:\n";
   cout << "\t -m [S5F mutability file]\n";
   cout << "\t -s [S5F substitution file]\n";
+  cout << "Sequence Files options - either SMUA, partis or seq argument required:\n";
+  cout << "\t -SMUA [SMUA file] : argument for SMUA file from Cloanalyst\n";
+  cout << "\t -partis [partis file] : file from partis either yaml or cvs\n";
+  cout << "\t -seq [fasta seq file] : fasta file containing sequences to process\n";
+  cout << "\t -uca [fasta uca file] : UCA fasta can contain either 1 seq or matching sequences to the seq file\n";
+  cout << "\t -markup [fasta markup file] : optional fasta for seq and uca sequence files\n";
+  cout << "output arguments\n";
+  //cout << "\t -no_text\n";
+  cout << "\t -simple_text : flag to print out simple text files\n";
+  cout << "\t -text : flag to print out all text files\n";
+  cout << "\t -HTML : flag to print out HTML files\n";
+  cout << "\t -fulloutput : flag to print out all text and HTML files\n";
   cout << "optional arguments:\n";
   cout << "\t -freq_dir [V, J Frequency file directory]\n";
   cout << "\t -amofile [amo file] : sets the amo file to be used\n";
@@ -87,6 +99,8 @@ int main(int argc, char *argv[])
   bool user_provided_random_seed=false;
   string amoFile="";
   string UCAtype="cloanalyst";
+  string ucaname="";
+  string markupFile="";
 
   int num_threads=0, max_num_threads=thread::hardware_concurrency();
   bool estimate=false;
@@ -111,6 +125,20 @@ int main(int argc, char *argv[])
 	{
 	  UCAtype="partis";
 	  SMUA_filename=next_arg;
+	}
+      if(arg=="-seq" or arg=="-seqs")
+	{
+	  UCAtype="individual";
+	  SMUA_filename=next_arg;
+
+	}
+      if(arg=="-uca")
+	{
+	  ucaname=next_arg;	  
+	}
+      if(arg=="-markup")
+	{
+	  markupFile=next_arg;
 	}
       if (arg == "-m")
 	{
@@ -334,6 +362,13 @@ int main(int argc, char *argv[])
 	   cerr << "Unidentified partis file type.\n ARMADiLLO supports yaml or csv file types from partis"<<endl;
 	   exit(1);
 	 }
+     }
+   else if(UCAtype.compare("individual")==0)
+     {
+       if(markupFile.size()<1 || !fexists(markupFile))
+	 readIndividualFiles(SMUA_filename,ucaname,SMUA_alignments_and_markup);
+       else
+	 readIndividualFiles(SMUA_filename,ucaname,markupFile,SMUA_alignments_and_markup);
      }
    else
      {

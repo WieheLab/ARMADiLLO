@@ -31,3 +31,6 @@ void read_PARTISyaml_file(string, vector<vector<string> > &);
 
 string cleanYAMLline(string);
 void cleanSeqs(string &,string &);
+void readIndividualFiles(string, string, vector<vector<string> > &);
+void readIndividualFiles(string, string, string, vector<vector<string> > &);
+
