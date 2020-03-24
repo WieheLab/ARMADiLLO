@@ -284,7 +284,6 @@ void readIndividualFiles(string fastaFilename, string UCAfile, string markupfile
   read_fasta_file(fastaFilename,seq_hash,seq_names);
   read_fasta_file(UCAfile,uca_hash,uca_strings);
   read_fasta_file(markupfile,markup_hash,markup_strings);
-  
   //readFastaFile(fastaFilename,seqs);
   //readFastaFile(UCAfile,uca);
 
@@ -347,8 +346,8 @@ void readIndividualFiles(string fastaFilename, string UCAfile, string markupfile
       temp.push_back(sequence);
       temp.push_back(uca_name);
       temp.push_back(uca_sequence);
-      temp.push_back(seq_name+"|IGV|IGD|IGJ");
-      temp.push_back(markup_sequence);
+      temp.push_back(markupName);
+      temp.push_back(markupStr);
       UA_alignments_and_markup.push_back(temp); 
     }
 }

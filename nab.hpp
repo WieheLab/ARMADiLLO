@@ -433,7 +433,9 @@ public:
     vector<int> countStopCodons;
 
     if(ignore_CDR3 && !setMutcount)
+      {
       _mut_count-=CDR3_mut_count;
+      }
     if(ignoreJ && !setMutcount)
       _mut_count-=Jgene_mut_count;
     if(ignoreV && !setMutcount)
@@ -460,6 +462,7 @@ public:
 	    vector<string> mutant_sequences;
 	    string _aa_sequence;
 	    int stopCounts=0;
+
 	    stopCounts=simulate_S5F_mutation(UCA_sequence,_mut_count, S5F_5mers, gen, dis,true, mutant_sequences, true, shield_mutations);
 	    countStopCodons.push_back(stopCounts);
 	    DNA_mutant_sequences.push_back(mutant_sequences[mutant_sequences.size()-1]);
