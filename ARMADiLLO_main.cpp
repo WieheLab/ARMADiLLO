@@ -48,23 +48,31 @@ int stop_codon_count;
 void helpMenu()
 {
   cout << "ARMADiLLO\n\n";
-  cout << "USAGE:\n\t ARMADiLLO -SMUA [SMUA file] -m [S5F mutability file] -s [S5F substitution file] <opt arguments>\n\n";
-  cout << "required arguments:\n\t -SMUA [SMUA file]\n";
+  cout << "USAGE:\n\t ARMADiLLO [seq file options] -m [S5F mutability file] -s [S5F substitution file] <opt arguments>\n\n";
+  cout << "required arguments:\n";
   cout << "\t -m [S5F mutability file]\n";
   cout << "\t -s [S5F substitution file]\n";
+  cout << "Sequence Files options - either SMUA, partis or seq argument required:\n";
+  cout << "\t -SMUA [SMUA file] : argument for SMUA file from Cloanalyst\n";
+  cout << "\t -partis [partis file] : file from partis either yaml or cvs\n";
+  cout << "\t -seq [seq fasta file] : fasta file containing sequences to process requires a uca file\n";
+  cout << "\t -uca [uca fasta file] : UCA fasta can contain either 1 seq or matching sequences to the seq file\n";
+  cout << "\t -markup [markup fasta file] : optional fasta for seq and uca sequence files\n";
+  cout << "output arguments\n";
+  //cout << "\t -no_text\n";
+  cout << "\t -simple_text : flag to print out simple text files\n";
+  cout << "\t -text : flag to print out all text files\n";
+  cout << "\t -HTML : (default) flag to print out HTML files\n";
+  cout << "\t -fulloutput : flag to print out all text and HTML files\n";
   cout << "optional arguments:\n";
-  cout << "\t -freq_dir [V, J Frequency file directory]\n";
-  cout << "\t -amofile [amo file] : sets the amo file to be used\n";
-  cout << "\t -resetamo   : flag to reset the amo file associated with a directory\n";
+  cout << "\t -freq_dir [V, J Frequency file directory] : directory to pull the frequency tables for quick analysis\n";
+  cout << "\t -amofile [amo file] : sets the amo file to use for the quick analysis\n";
+  cout << "\t -resetamo   : flag to reset the amo file associated\n";
   cout <<"\t -w [line wrap length (60)]\n\t -max_iter [cycles of B cell maturation(1000)]\n\t -c [cutoff for highlighting low prob (1=1%)]\n\t -replace_J_upto [number of replacements in J allowed]\n\t -chain [chain type (heavy=default|kappa|lambda)]\n\t -species [(human=default|rhesus)]\n\t -(l)ineage [number of trees] : argument to generate the mutations through a lineage generation instead of linear generation\n\t -(n)umber [number of mutations] : arguemnt to set number of mutations to generate instead of taking from mutant sequence\n\t -clean_first : flag to turn on cleaning the SMUA prior to running\n\t -output_seqs : flag to turn on printing out simulated seq]\n";
   cout <<"\t -ignore_CDR3 : flag to ignore CDR3, default is false\n";
   cout <<"\t -ignore_V    : flag to ignore V, default is false\n";
   cout <<"\t -ignore_J    : lag to ignore J, default is false\n";
   cout << "\t -threads [number] : sets the number of threads to use during processing - default is number of processors\n";
-  cout << "\t -simple_text : \n";
-  cout << "\t -text        : \n";
-  cout << "\t -HTML        : default\n";
-  cout << "\t -fulloutput  : \n";
   cout <<"\t -random_seed [provide a random seed]\n";
   exit(1);
 
@@ -87,6 +95,8 @@ int main(int argc, char *argv[])
   bool user_provided_random_seed=false;
   string amoFile="";
   string UCAtype="cloanalyst";
+  string ucaname="";
+  string markupFile="";
 
   int num_threads=0, max_num_threads=thread::hardware_concurrency();
   bool estimate=false;
@@ -111,6 +121,20 @@ int main(int argc, char *argv[])
 	{
 	  UCAtype="partis";
 	  SMUA_filename=next_arg;
+	}
+      if(arg=="-seq" or arg=="-seqs")
+	{
+	  UCAtype="individual";
+	  SMUA_filename=next_arg;
+
+	}
+      if(arg=="-uca")
+	{
+	  ucaname=next_arg;	  
+	}
+      if(arg=="-markup")
+	{
+	  markupFile=next_arg;
 	}
       if (arg == "-m")
 	{
@@ -335,6 +359,19 @@ int main(int argc, char *argv[])
 	   exit(1);
 	 }
      }
+   else if(UCAtype.compare("individual")==0)
+     {
+       if( ucaname.size()<1 || !fexists(ucaname))
+	 {
+	   cout << "Error in uca file\n\n";
+	   helpMenu();
+	 }
+       cout << "mark up: "<<markupFile<<endl;
+       if(markupFile.size()<1 || !fexists(markupFile))
+	 readIndividualFiles(SMUA_filename,ucaname,SMUA_alignments_and_markup);
+       else
+	 readIndividualFiles(SMUA_filename,ucaname,markupFile,SMUA_alignments_and_markup);
+     }
    else
      {
        cout << "unknown UCA collection sequence"<<endl;
@@ -457,6 +494,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       nab.replaceUCA(dna_to_aa_map,arg.input_UCA_sequence,arg.ignore_warnings);
       nab.markup_mask=nab.parseMarkup();
     }
+  nab.createShield(arg.ignore_CDR3,arg.ignoreV,arg.ignoreJ);
   if(arg.quick)
     {
       //nab.Jgene_sequence=J_genes_list(arg.species,nab.Jgene);

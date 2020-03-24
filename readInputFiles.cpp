@@ -204,6 +204,156 @@ void read_PARTISyaml_file(string filename, vector<vector<string> > &UA_alignment
   return;
 }
 
+void readIndividualFiles(string fastaFilename, string UCAfile, vector<vector<string> > &UA_alignments_and_markup)
+{//without markup
+  vector<vector<string>> seqs;
+  vector<vector<string>> uca;
+  map<char,map<char,int> > scoring_matrix;
+  load_EDNAFULL_matrix(scoring_matrix);
+  double gap_open=-20, gap_extend=-2, score=0;
+
+ map<string,string> seq_hash,uca_hash;
+ vector<string> seq_names,uca_strings;
+  
+  read_fasta_file(fastaFilename,seq_hash,seq_names);
+  read_fasta_file(UCAfile,uca_hash,uca_strings);
+  
+  //readFastaFile(fastaFilename,seqs);
+  //readFastaFile(UCAfile,uca);
+
+  for(int i=0;i<seq_names.size();i++)
+    {
+      vector<string> temp;
+      string seq_name,sequence, uca_name,uca_sequence;
+      
+      seq_name=seq_names[i];
+      sequence=seq_hash[seq_name];
+
+      if(uca_strings.size()==1)
+	{
+	  uca_name=uca_strings[0];
+	  uca_sequence=uca_hash[uca_name];
+	}
+      else if(uca_strings.size()==seq_names.size())
+	{
+	  uca_name="";
+	  for(int n=0;n<uca_strings.size();n++)
+	    {
+	      if(uca_strings[n].find(seq_name)>=0)
+		{
+		  uca_name=uca_strings[n];
+		  break;
+		}
+	    }
+	  if(uca_name.length()==0)
+	    uca_name=uca_strings[i];
+
+	  uca_sequence=uca_hash[uca_name]; 
+	}
+      if(sequence.length()!=uca_sequence.length())
+	{
+	  string newUCA,newSeq;
+	  pairwise_align_sequences_semiglobal_w_affine_gap(scoring_matrix, uca_sequence, sequence, gap_open, gap_extend, newUCA, newSeq, score);
+	  uca_sequence=newUCA;
+	  sequence=newSeq;
+	}
+      
+      string markup_sequence(sequence.length(),'U');
+      temp.push_back(seq_name);
+      temp.push_back(sequence);
+      temp.push_back(uca_name);
+      temp.push_back(uca_sequence);
+      temp.push_back(seq_name+"|IGV|IGD|IGJ");
+      temp.push_back(markup_sequence);
+      UA_alignments_and_markup.push_back(temp); 
+    }
+}
+
+void readIndividualFiles(string fastaFilename, string UCAfile, string markupfile, vector<vector<string> > &UA_alignments_and_markup)
+{//with markup
+  vector<vector<string>> seqs;
+  vector<vector<string>> uca;
+  vector<vector<string>> markup;
+  map<char,map<char,int> > scoring_matrix;
+  load_EDNAFULL_matrix(scoring_matrix);
+  double gap_open=-20, gap_extend=-2, score=0;
+
+  map<string,string> seq_hash,uca_hash,markup_hash;
+  vector<string> seq_names,uca_strings,markup_strings;
+  
+  read_fasta_file(fastaFilename,seq_hash,seq_names);
+  read_fasta_file(UCAfile,uca_hash,uca_strings);
+  read_fasta_file(markupfile,markup_hash,markup_strings);
+  //readFastaFile(fastaFilename,seqs);
+  //readFastaFile(UCAfile,uca);
+
+  for(int i=0;i<seq_names.size();i++)
+    {
+      vector<string> temp;
+      string seq_name,sequence, uca_name,uca_sequence,markupName,markupStr;
+      
+      seq_name=seq_names[i];
+      sequence=seq_hash[seq_name];
+
+      if(uca_strings.size()==1)
+	{
+	  uca_name=uca_strings[0];
+	  uca_sequence=uca_hash[uca_name];
+	  markupName=markup_strings[0];
+	  markupStr=markup_hash[markupName];
+	}
+      else if(uca_strings.size()==seq_names.size())
+	{
+	  uca_name="";
+	  for(int n=0;n<uca_strings.size();n++)
+	    {
+	      if(uca_strings[n].find(seq_name)>=0)
+		{
+		  uca_name=uca_strings[n];
+		  break;
+		}
+	    }
+	  if(uca_name.length()==0)
+	    uca_name=uca_strings[i];
+
+	  uca_sequence=uca_hash[uca_name];
+
+	  
+	  markupName="";
+	  for(int n=0;n<markup_strings.size();n++)
+	    {
+	      if(markup_strings[n].find(seq_name)>=0)
+		{
+		  markupName=uca_strings[n];
+		  break;
+		}
+	    }
+	  if(uca_name.length()==0)
+	    markupName=uca_strings[i];
+
+	  markupStr=markup_hash[markupName]; 
+	}
+      if(sequence.length()!=uca_sequence.length())
+	{
+	  string newUCA,newSeq;
+	  pairwise_align_sequences_semiglobal_w_affine_gap(scoring_matrix, uca_sequence, sequence, gap_open, gap_extend, newUCA, newSeq, score);
+	  uca_sequence=newUCA;
+	  sequence=newSeq;
+	}
+      
+      string markup_sequence(sequence.length(),'U');
+      temp.push_back(seq_name);
+      temp.push_back(sequence);
+      temp.push_back(uca_name);
+      temp.push_back(uca_sequence);
+      temp.push_back(markupName);
+      temp.push_back(markupStr);
+      UA_alignments_and_markup.push_back(temp); 
+    }
+}
+
+
+
 string cleanYAMLline(string line)
 {
   string output="";
