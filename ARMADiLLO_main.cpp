@@ -64,6 +64,7 @@ void helpMenu()
   cout << "\t -text : flag to print out all text files\n";
   cout << "\t -HTML : (default) flag to print out HTML files\n";
   cout << "\t -fulloutput : flag to print out all text and HTML files\n";
+  cout << "\t -annotate : flag to print out annotation of the sequences\n";
   cout << "optional arguments:\n";
   cout << "\t -freq_dir [V, J Frequency file directory] : directory to pull the frequency tables for quick analysis\n";
   cout << "\t -amofile [amo file] : sets the amo file to use for the quick analysis\n";
@@ -97,9 +98,11 @@ int main(int argc, char *argv[])
   string UCAtype="cloanalyst";
   string ucaname="";
   string markupFile="";
-
+  string  annotationFile;
   int num_threads=0, max_num_threads=thread::hardware_concurrency();
   bool estimate=false;
+ 
+  map<string,vector<string>> annotation;
   Arguments arguments;
   while(i<argc)
     {
@@ -212,6 +215,11 @@ int main(int argc, char *argv[])
       if(arg== "-fulloutput" || arg=="-alloutput")
 	{
 	  arguments.outputMode="all";
+	}
+      if(arg=="-annotate")
+	{
+	  cout << "turning annotation on"<<endl;
+	  arguments.annotateFlag=true;
 	}
       if (arg == "-c")
 	{
@@ -347,7 +355,7 @@ int main(int argc, char *argv[])
        string ext =SMUA_filename.substr(pos+1);
        if(string("csv").compare(ext)==0)
 	 {
-	 read_PARTIScsv_file(SMUA_filename,SMUA_alignments_and_markup);
+	   read_PARTIScsv_file(SMUA_filename,SMUA_alignments_and_markup);
 	 }
        else if(string("yaml").compare(ext)==0)
 	 {
@@ -425,13 +433,21 @@ int main(int argc, char *argv[])
    //for(int i=0; i<SMUA_alignments_and_markup.size(); i++)
    int MAX_THREADS=num_threads;
    int size=SMUA_end;
+   if(arguments.annotateFlag)
+     {
+       for(int i=SMUA_start;i<SMUA_end;i++)
+	 {
+	   vector<string> tmp;
+	   annotation[SMUA_alignments_and_markup[i][0]]=tmp;
+	 }
+     }
    for(int i=SMUA_start;i<SMUA_end;i+=MAX_THREADS)
      {
        int number_of_threads=min(MAX_THREADS,size-i);
        vector<thread> thread_list;
        for(int j=0;j<number_of_threads;j++)
 	 {
-	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments)));
+	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments),std::ref(annotation)));
 	 }
        for(int j=0;j<number_of_threads;j++)
 	 {
@@ -446,6 +462,25 @@ int main(int argc, char *argv[])
        boost::archive::binary_oarchive outa(outfs);
        outa << v_input;
      }
+
+   if(arguments.annotateFlag)
+     {
+       int pos =SMUA_filename.find_last_of(".");
+       annotationFile=SMUA_filename.substr(0,pos)+".annotation.txt";
+
+       ofstream file_out;
+       file_out.open(annotationFile.c_str());
+       
+       for(int i=SMUA_start;i<SMUA_end;i++)
+	 {
+	   file_out << SMUA_alignments_and_markup[i][0];
+	   for(int j=0;j<annotation[SMUA_alignments_and_markup[i][0]].size();j++)
+	     {
+	       file_out << ","<<annotation[SMUA_alignments_and_markup[i][0]][j];
+	     }
+	   file_out << endl;
+	 }
+     }
    
    //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
@@ -457,7 +492,7 @@ int main(int argc, char *argv[])
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg)
+void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg, map<string,vector<string>> &annotation)
 {
   //double total_elapsed_time=0;
   //clock_t begin=clock();
@@ -519,7 +554,12 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     {
       nab.countAAPairs(arg.aaMuts);
     }
-  nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+  vector<string> SNPs;
+  SNPs=nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+  if(arg.annotateFlag)
+    {
+      annotation[nab.sequence_name]=SNPs;
+    }
   nab.printlog();
   //clock_t end=clock();
   //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;

@@ -307,12 +307,13 @@ public:
     shield_mutations=_shield_mutations;
   }
 
-  void printResults(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map, int line_wrap_length,double low_prob_cutoff,vector<double> &color_ladder)
+  vector<string> printResults(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map, int line_wrap_length,double low_prob_cutoff,vector<double> &color_ladder)
   {
     int aa_mut_count=0;
+    vector<string> SNPs;
     string UCA_aa_sequence="", aa_sequence="", UCA_aa_CDR3="", seq_aa_CDR3="";
     vector<Seq> seq_vector, UCA_seq_vector, aa_seq_vector, aa_UCA_seq_vector;
-
+    
     int CDR3_length=0;
     
     process_SMUA_sequence_to_seq_vector(sequence, markup_string, seq_vector, dna_to_aa_map, S5F_5mers);
@@ -334,7 +335,7 @@ public:
 	  }
 	seq_vector[j].all_simulated_aa_positional_frequencies_map=mature_mutant_positional_aa_freqs[seq_vector[j].aa_num-1];
       }
-       
+    
     int p02_count=0, p01_count=0, p001_count=0, p0001_count=0;
     float PPvalue=0;
     map<string, int> region_counts;
@@ -358,6 +359,7 @@ public:
 	    PPvalue+=log(seq_vector[j].simulated_aa_positional_frequency);
 	  }
       }
+    generateRanking(seq_vector);
     
     int AAseqLen= UCA_seq_vector.size()/3;
     if (mut_count==0) 
@@ -383,7 +385,14 @@ public:
 	  {
 	    if (seq_vector[j].aa != UCA_seq_vector[j].aa)
 	      {
+		char snp[10];
+		//
+		//sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
+		sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
+		//sprintf(snp,"%s%d%s:%0.6f:%0.5f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].rank,seq_vector[j].simulated_aa_positional_frequency);
+		string snpStr(snp);
 		seq_vector[j].isMut=true;
+		SNPs.push_back(snpStr.c_str());
 	      }
 	    else
 	      {
@@ -416,10 +425,9 @@ public:
       {
 	simpleTextPrintOut(sequence_name+".ARMADiLLO.fasta",aa_sequence,UCA_aa_sequence,seq_vector);
       }
-
-    
+    return SNPs;
   }
-
+  
   bool SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
   {
     if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence))
@@ -493,6 +501,35 @@ public:
     return true;
   }
 
+
+  void generateRanking(vector<Seq> &seq_vector)
+  {
+    vector<double> values;
+    for(int i=0;i<seq_vector.size();i++)
+      {
+	values.push_back(seq_vector[i].simulated_aa_positional_frequency);
+      }
+    
+    sort(values.begin(),values.end());
+
+    for(int i=0;i<seq_vector.size();i++)
+      {
+	double v=seq_vector[i].simulated_aa_positional_frequency;
+	
+	for(int j=0;j<values.size();j++)
+	  {
+	    //cout << v<<"\t"<<values[j]<<"\t"<<j/(double)seq_vector.size()<<endl;
+	    if(v==values[j])
+	      {
+		seq_vector[i].rank=j/(double)seq_vector.size();
+		break;
+	    }
+	  }
+      }
+    
+  }
+
+  
   bool replaceTable(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input, Arguments &arg)
   {
     string UCA_aa_sequence="";
@@ -725,6 +762,7 @@ public:
     //cout << seq_vector[1]<<endl;
   }
 
+  
 };
 
 #endif

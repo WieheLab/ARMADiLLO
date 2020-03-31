@@ -61,6 +61,7 @@ public:
   string base;
   double S5F_mut_score;
   double simulated_aa_positional_frequency;
+  double rank;
   string CDR_markup;
   bool isMut;
   map<char,double> all_simulated_aa_positional_frequencies_map;
@@ -75,6 +76,7 @@ public:
     aa=_aa;
     S5F_mut_score=_S5F_mut_score;
   }
+
 };
 
 struct Arguments
@@ -95,6 +97,7 @@ struct Arguments
   bool lineage=false;
   int branches=1;
   int line_wrap_length=60, max_iter=1000,replace_J_upto=0;
+  bool annotateFlag=false;
   std::mt19937 gen;
   std::uniform_real_distribution<double> dis;
 };
@@ -133,6 +136,6 @@ string convert_to_string(Type);
 //map<string, map<string, string> >
 string J_genes_list(string species,string IGname);
 
-void run_entry(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &);//function to run the entry object to generate simulations
+void run_entry(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &, map<string,vector<string>> &);//function to run the entry object to generate simulations
 
   
