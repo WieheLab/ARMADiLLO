@@ -33,6 +33,9 @@ public:
   string log_cerr="";
   string outputMode="HTML";//options:HTML,none,simple,fulltext,all
   vector<bool> shield_mutations;
+
+  bool rank=false;
+  
   ~NabEntry() {};
   NabEntry(vector<string>  Entry, Arguments arg)//constructor with number of mutations
   {
@@ -341,6 +344,7 @@ public:
     map<string, int> region_counts;
     for(int j=0; j<seq_vector.size(); j+=3)
       {
+	UCA_seq_vector[j].rank=1;
 	if ((UCA_seq_vector[j].aa=="-")||(UCA_seq_vector[j].base=="-")){continue;} //skip if insertion i.e. gap in UCA_seq sequence
 	if (j+1<seq_vector.size()){if(UCA_seq_vector[j+1].base=="-"){continue;}}
 	if (j+2<seq_vector.size()){if(UCA_seq_vector[j+2].base=="-"){continue;}}
@@ -387,8 +391,11 @@ public:
 	      {
 		char snp[10];
 		//
-		//sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
-		sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
+		if(rank)
+		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
+		else
+		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
+
 		//sprintf(snp,"%s%d%s:%0.6f:%0.5f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].rank,seq_vector[j].simulated_aa_positional_frequency);
 		string snpStr(snp);
 		seq_vector[j].isMut=true;
@@ -410,7 +417,7 @@ public:
 	aa_sequence_names.push_back("UCA");
 	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
 	if(outputMode=="HTML"||outputMode=="all")
-	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
+	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder,rank);
 	if (outputMode=="fulltext" || outputMode=="all")
 	  {
 	    detailedTextPrintOut(sequence_name+".ARMADiLLO.Detailed.text",aa_sequence,UCA_aa_sequence,seq_vector,all_sequences);
@@ -511,7 +518,17 @@ public:
       }
     
     sort(values.begin(),values.end());
-
+    /*for(int i=0;i<values.size();i++)
+      cout << values[i]<<" ";
+    cout <<endl;
+    */
+    vector<double>::iterator ip;
+    ip=std::unique(values.begin(),values.end());
+    values.resize(std::distance(values.begin(),ip));
+    /*for(int i=0;i<values.size();i++)
+      cout << values[i]<<" ";
+    cout <<endl;
+    */
     for(int i=0;i<seq_vector.size();i++)
       {
 	double v=seq_vector[i].simulated_aa_positional_frequency;
@@ -521,7 +538,7 @@ public:
 	    //cout << v<<"\t"<<values[j]<<"\t"<<j/(double)seq_vector.size()<<endl;
 	    if(v==values[j])
 	      {
-		seq_vector[i].rank=j/(double)seq_vector.size();
+		seq_vector[i].rank=j/(double)values.size();
 		break;
 	    }
 	  }

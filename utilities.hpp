@@ -36,3 +36,5 @@ int countChar(string,char);
 void print_pct_progress(int, int, int);
 void number_of_mutations_two_seqs(string &, string &, int &);
 string findAndReplaceAll(string &, string, string);
+
+string formatDouble(double);

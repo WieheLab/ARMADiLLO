@@ -296,6 +296,10 @@ int main(int argc, char *argv[])
 	{
 	  arguments.aaMuts=next_arg;
 	}
+      if(arg=="-rank")
+	{
+	  arguments.rank=true;
+	}
       i++;
     }
   
@@ -517,6 +521,8 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     }
     
   NabEntry nab(SMUA_entries,arg);
+  nab.rank=arg.rank;
+  
   if(arg.clean_SMUA_first)
     {
       if (nab.cleanSMUA(arg.species,arg.chain_type,arg.replace_J_upto)<0)
@@ -555,7 +561,11 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       nab.countAAPairs(arg.aaMuts);
     }
   vector<string> SNPs;
-  SNPs=nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+  if(arg.rank)
+    SNPs=nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_rank_ladder);
+  else
+    SNPs=nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+
   if(arg.annotateFlag)
     {
       annotation[nab.sequence_name]=SNPs;
@@ -568,7 +578,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
   return;
 }
 
-void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder)
+void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder,bool rank)
 {
   vector<vector<vector<Seq> > > split_all_sequences;
   vector2D_to_3D(all_sequences,line_wrap_length, split_all_sequences);
@@ -590,7 +600,7 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
       HTML::Table html_table;
       html_table.hclass="results";
       //convert seq vector to html table
-      convert_2D_seq_vector_to_HTML_table_for_tiles_view(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff, color_ladder, counter);
+      convert_2D_seq_vector_to_HTML_table_for_tiles_view(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff, color_ladder, counter,rank);
       //missing step: stylize the table
       
       //print HTML tables
@@ -599,18 +609,33 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
     }
 
   file_string+="<br><br><br>\n";
-  file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  /*file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
   file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">20-10\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">10-2\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">2-1\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">1.0-0.1\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">0.10-0.01\%&nbsp;&nbsp;</td> ";
-  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";
+  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";*/
+
   
   //file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
-  file_string+="</body>\n</html>\n"; 
-
+  if(rank)
+    file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Probability Rank:&nbsp;</b></font></td>";
+  else
+    file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  for(int i=6;i>-1;i--)
+    {
+      if(i==6)
+	file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td>";
+      else if(i==0)
+	file_string+="<td class=\"color_cat"+to_string(i+1)+ " mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;"+formatDouble(color_ladder[i]*100) +"\%</td>";
+      else
+	file_string+="<td class=\"color_cat"+to_string(i+1)+" mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">"+formatDouble(color_ladder[i]*100)+"-"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td> ";
+    }
+  file_string+="</tr></table></p>\n";
+  file_string+="</body>\n</html>\n";
+  
   ofstream file_out;
   file_out.open(filename.c_str());
   file_out << file_string;
@@ -1646,7 +1671,7 @@ void cleanup_SMUA_sequences(string sequence_name, string markup_header, string U
   return;
 }
 
-void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter)
+void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter, bool RANK)
 {
   //RULER
   HTML::Tr ruler1_row, ruler2_row;
@@ -1702,15 +1727,31 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
 	  //assign category for coloring
 	  for(int k=0; k<color_ladder.size(); k++)
 	    {
-	      if (v2[i][j].simulated_aa_positional_frequency <= color_ladder[k])
+	      if(RANK)
 		{
-		  ostringstream ss;
+		  if (v2[i][j].rank <= color_ladder[k])
+		    {
+		      ostringstream ss;
+		      if(v2[i][j].aa=="X")
+			ss << "color_cat" << 8;
+		      else
+			ss << "color_cat" << k+1;
+		      td1.hclass=ss.str();
+		      break;
+		    }
+		}
+	      else
+		{
+		  if (v2[i][j].simulated_aa_positional_frequency <= color_ladder[k])
+		    {
+		      ostringstream ss;
 		  if(v2[i][j].aa=="X")
 		    ss << "color_cat" << 8;
 		  else
 		    ss << "color_cat" << k+1;
 		  td1.hclass=ss.str();
 		  break;
+		    }
 		}
 	    }
 	  if (v2[i][j].aa=="Z"){td1.hclass="noborder"; td1.value="";}

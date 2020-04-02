@@ -91,6 +91,7 @@ struct Arguments
   string aaMuts="";
   string outputMode="HTML";
   vector<double> color_ladder{0.0001, 0.001, 0.01, 0.02, 0.10, 0.20, 0.5, 1};
+  vector<double> color_rank_ladder{0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1};
   int numbMutations=-1;
   double low_prob_cutoff=.02;
   bool clean_SMUA_first=false, remutate=false, output_seqs=false, ignore_warnings=false;
@@ -98,6 +99,7 @@ struct Arguments
   int branches=1;
   int line_wrap_length=60, max_iter=1000,replace_J_upto=0;
   bool annotateFlag=false;
+  bool rank=false;
   std::mt19937 gen;
   std::uniform_real_distribution<double> dis;
 };
@@ -107,7 +109,7 @@ void process_SMUA_sequence_to_seq_vector(string &, string &, vector<Seq> &, map<
 int simulate_S5F_mutation(string , int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
 void simulate_S5F_lineage(string , int, int &, map<string,S5F_mut> &, mt19937 &, uniform_real_distribution<double> &, bool, vector<string> &, bool,  vector<bool> &);
 void print_output(string, vector<vector<Seq> > &, vector<string>, int, double);
-void print_output_for_tiles_view(string, vector<vector<Seq> > &, vector<string>, int, double, vector<double> &);
+void print_output_for_tiles_view(string, vector<vector<Seq> > &, vector<string>, int, double, vector<double> &,bool);
 void print_freq_table_to_file(string,  map<int, map<char,double> > &);
 void print_HTML_freq_table_to_file(string,  map<int, map<char,double> > &, string, vector<double> &);
 ///functions
@@ -122,7 +124,7 @@ void print_tile_view(string,vector<vector<Seq> > &, vector<string>, int, double,
 void get_mutability_scores(map<string,S5F_mut> &, string, int, bool, vector<bool> &, vector<double> &, vector<double> &, double &, double &);
 void cleanup_SMUA_sequences(string, string, string , string , string , string &, string &, string &, string , string , int &, bool &);
 bool sequence_has_ambiguities(string);
-void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &, vector<double> &, int &);
+void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&, vector<string> &, HTML::Table &, double &, vector<double> &, int &,bool);
 void replace_UCA_sequence_in_SMUA(string, string, string, string, string &, string &, string &, bool);
 void helpMenu();
 void read_V(const std::string &, map<string,map<int, map<char,double> >> &);
