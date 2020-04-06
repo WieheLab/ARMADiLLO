@@ -94,7 +94,7 @@ struct Arguments
   bool clean_SMUA_first=false, remutate=false, output_seqs=false, ignore_warnings=false;
   bool lineage=false;
   int branches=1;
-  int line_wrap_length=60, max_iter=1000,replace_J_upto=0;
+  int line_wrap_length=60, max_iter=10000,replace_J_upto=0;
   std::mt19937 gen;
   std::uniform_real_distribution<double> dis;
 };
