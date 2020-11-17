@@ -33,6 +33,6 @@ HTML.o: HTML.cpp HTML.hpp
 	${cxx} ${flags} ${links} -c HTML.cpp
 
 clean: #cleaning out old compiled files
-	rm -f ARMADiLLO_main.o utilities.o HTML.o ARMADiLLO readInputFiles.o
+	rm -f *.o ARMADiLLO
 
 #END OF MAKEFILE
