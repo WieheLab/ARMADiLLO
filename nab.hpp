@@ -1,8 +1,13 @@
 #ifndef NabEntry_H
 #define NabEntry_H
 
+#include <iostream>
+//#include <boost/filesystem.hpp>
+
 using namespace std;
+//namespace fs=std::filesystem;
 using namespace boost;
+
 //using namespace boost::filesystem;
 
 class NabEntry//class for collecting and doing the sequences
@@ -62,7 +67,13 @@ public:
     markup_mask=parseMarkup();
     vector<bool> _shield_mutations(markup_string.length(), false);
     shield_mutations=_shield_mutations;
-
+    //cout << "outdir\t"<<arg.outDirectory<<"\n";
+    //if(!arg.outDirectory.empty())
+    //  {
+    //	boost::filesystem::create_directory(arg.outDirectory);
+    //	cout << "outdir not empty";
+    //  }
+    
     if(arg.numbMutations<0)
       {
 	output_filename=sequence_name+".ARMADiLLO.html";

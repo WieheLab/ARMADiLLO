@@ -90,6 +90,7 @@ struct Arguments
   string input_UCA_sequence="";
   string aaMuts="";
   string outputMode="HTML";
+  string outDirectory="";
   vector<double> color_ladder{0.0001, 0.001, 0.01, 0.02, 0.10, 0.20, 0.5, 1};
   vector<double> color_rank_ladder{0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1};
   int numbMutations=-1;

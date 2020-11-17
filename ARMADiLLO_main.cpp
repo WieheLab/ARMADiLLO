@@ -66,6 +66,7 @@ void helpMenu()
   cout << "\t -fulloutput : flag to print out all text and HTML files\n";
   cout << "\t -annotate : flag to print out annotation of the sequences\n";
   cout << "optional arguments:\n";
+  //cout << "\t -(d)ir : sets the output directory of the files\n";
   cout << "\t -freq_dir [V, J Frequency file directory] : directory to pull the frequency tables for quick analysis\n";
   cout << "\t -amofile [amo file] : sets the amo file to use for the quick analysis\n";
   cout << "\t -resetamo   : flag to reset the amo file associated\n";
@@ -183,6 +184,11 @@ int main(int argc, char *argv[])
       if (arg == "-number" or arg=="-n")
 	{
 	  arguments.numbMutations=atoi(next_arg.c_str());
+	}
+      if (arg == "-dir" or arg=="-d")
+	{
+	  arguments.outDirectory=next_arg.c_str();
+	  
 	}
       if (arg == "-lineage" or arg == "-l")
 	{
