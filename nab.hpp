@@ -171,6 +171,7 @@ public:
       if (UCA_sequence[i] != sequence[i] && markup_mask[i]=="J") {Jgene_mut_count++;}
       if (UCA_sequence[i] != sequence[i] && markup_mask[i]=="C") {CDR3_mut_count++;}
     }
+    return;
   }
   
   vector<string> parseMarkup()
@@ -435,10 +436,13 @@ public:
 	  }
 	
       }
+	//cout << "line412"<<endl;
     if(outputMode=="all" || outputMode=="fulltext")
       print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
+//	cout << "line415"<<endl;
     if(outputMode=="HTML" || outputMode=="all")
       print_HTML_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs,UCA_aa_sequence,color_ladder);
+//	cout << "lineline418"<<endl;
     if(outputMode=="simple" || outputMode=="fulltext" || outputMode=="all")
       {
 	simpleTextPrintOut(sequence_name+".ARMADiLLO.fasta",aa_sequence,UCA_aa_sequence,seq_vector);
@@ -690,6 +694,7 @@ public:
 	  pairCount++;
 	}
     log_cout+=sequence_name+" Percent of sequences with mutants:  "+ to_string(pairCount/mature_mutant_sequences.size()) +"\n";
+    return;
   }
   
   void outputSimSeqs(int max_iter, int branches)//function to write out the simulated sequences
@@ -708,20 +713,22 @@ public:
       }
     file_out.close();
     fileDNA_out.close();
+   return;
   }
 
 
   void simpleTextPrintOut(string filename,string &aa_sequence,string &UCA_aa_sequence,vector<Seq> &seq_vector)
   {
-    
+    //cout << "out ln654"<<endl;
     ofstream file_out;
     file_out.open(filename.c_str());
-    file_out<<">"+sequence_name<<endl;
+    file_out<<">"<<sequence_name<<endl;
     file_out<<UCA_aa_sequence<<endl;
     file_out<<aa_sequence<<endl;
-
+//cout << "lin663"<<endl;
     for(int j=0; j<aa_sequence.size(); j+=1)
       {
+	//cout << "line666"<<endl;
 	if (aa_sequence[j]=='X'||UCA_aa_sequence[j]=='X')
 	  {
 	    file_out<<"X";
@@ -744,6 +751,8 @@ public:
     file_out<<endl;
     //getchar();
     file_out.close();
+//x	cout << "ln 688"<<endl;
+return;
   }
 
   void detailedTextPrintOut(string filename,string &aa_sequence,string &UCA_aa_sequence,vector<Seq> &seq_vector,vector<vector<Seq>> &all_sequences)
