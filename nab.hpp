@@ -401,7 +401,7 @@ public:
 	  {
 	    if (seq_vector[j].aa != UCA_seq_vector[j].aa)
 	      {
-		char snp[10];
+		char snp[11];
 		//
 		if(rank)
 		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);

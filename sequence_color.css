@@ -103,7 +103,7 @@ table.results td {
    text-align: center;
    font-weight: bold;
    /*border: 1px dotted #000080;*/
-   border: 1px dotted #969696;
+   border: 1px solid #969696;
    border-radius: 5px;
 }
 table.results td.mut {
