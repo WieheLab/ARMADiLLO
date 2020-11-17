@@ -1,8 +1,13 @@
 #ifndef NabEntry_H
 #define NabEntry_H
 
+#include <iostream>
+//#include <boost/filesystem.hpp>
+
 using namespace std;
+//namespace fs=std::filesystem;
 using namespace boost;
+
 //using namespace boost::filesystem;
 
 class NabEntry//class for collecting and doing the sequences
@@ -33,6 +38,9 @@ public:
   string log_cerr="";
   string outputMode="HTML";//options:HTML,none,simple,fulltext,all
   vector<bool> shield_mutations;
+
+  bool rank=false;
+  
   ~NabEntry() {};
   NabEntry(vector<string>  Entry, Arguments arg)//constructor with number of mutations
   {
@@ -59,7 +67,13 @@ public:
     markup_mask=parseMarkup();
     vector<bool> _shield_mutations(markup_string.length(), false);
     shield_mutations=_shield_mutations;
-
+    //cout << "outdir\t"<<arg.outDirectory<<"\n";
+    //if(!arg.outDirectory.empty())
+    //  {
+    //	boost::filesystem::create_directory(arg.outDirectory);
+    //	cout << "outdir not empty";
+    //  }
+    
     if(arg.numbMutations<0)
       {
 	output_filename=sequence_name+".ARMADiLLO.html";
@@ -308,12 +322,13 @@ public:
     shield_mutations=_shield_mutations;
   }
 
-  void printResults(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map, int line_wrap_length,double low_prob_cutoff,vector<double> &color_ladder)
+  vector<string> printResults(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map, int line_wrap_length,double low_prob_cutoff,vector<double> &color_ladder)
   {
     int aa_mut_count=0;
+    vector<string> SNPs;
     string UCA_aa_sequence="", aa_sequence="", UCA_aa_CDR3="", seq_aa_CDR3="";
     vector<Seq> seq_vector, UCA_seq_vector, aa_seq_vector, aa_UCA_seq_vector;
-
+    
     int CDR3_length=0;
     
     process_SMUA_sequence_to_seq_vector(sequence, markup_string, seq_vector, dna_to_aa_map, S5F_5mers);
@@ -335,12 +350,13 @@ public:
 	  }
 	seq_vector[j].all_simulated_aa_positional_frequencies_map=mature_mutant_positional_aa_freqs[seq_vector[j].aa_num-1];
       }
-       
+    
     int p02_count=0, p01_count=0, p001_count=0, p0001_count=0;
     float PPvalue=0;
     map<string, int> region_counts;
     for(int j=0; j<seq_vector.size(); j+=3)
       {
+	UCA_seq_vector[j].rank=1;
 	if ((UCA_seq_vector[j].aa=="-")||(UCA_seq_vector[j].base=="-")){continue;} //skip if insertion i.e. gap in UCA_seq sequence
 	if (j+1<seq_vector.size()){if(UCA_seq_vector[j+1].base=="-"){continue;}}
 	if (j+2<seq_vector.size()){if(UCA_seq_vector[j+2].base=="-"){continue;}}
@@ -359,6 +375,7 @@ public:
 	    PPvalue+=log(seq_vector[j].simulated_aa_positional_frequency);
 	  }
       }
+    generateRanking(seq_vector);
     
     int AAseqLen= UCA_seq_vector.size()/3;
     if (mut_count==0) 
@@ -384,7 +401,17 @@ public:
 	  {
 	    if (seq_vector[j].aa != UCA_seq_vector[j].aa)
 	      {
+		char snp[10];
+		//
+		if(rank)
+		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
+		else
+		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
+
+		//sprintf(snp,"%s%d%s:%0.6f:%0.5f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].rank,seq_vector[j].simulated_aa_positional_frequency);
+		string snpStr(snp);
 		seq_vector[j].isMut=true;
+		SNPs.push_back(snpStr.c_str());
 	      }
 	    else
 	      {
@@ -402,7 +429,7 @@ public:
 	aa_sequence_names.push_back("UCA");
 	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
 	if(outputMode=="HTML"||outputMode=="all")
-	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder);
+	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder,rank);
 	if (outputMode=="fulltext" || outputMode=="all")
 	  {
 	    detailedTextPrintOut(sequence_name+".ARMADiLLO.Detailed.text",aa_sequence,UCA_aa_sequence,seq_vector,all_sequences);
@@ -420,10 +447,9 @@ public:
       {
 	simpleTextPrintOut(sequence_name+".ARMADiLLO.fasta",aa_sequence,UCA_aa_sequence,seq_vector);
       }
-	//cout << "line420\n";
-    return;
+    return SNPs;
   }
-
+  
   bool SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
   {
     if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence))
@@ -497,6 +523,45 @@ public:
     return true;
   }
 
+
+  void generateRanking(vector<Seq> &seq_vector)
+  {
+    vector<double> values;
+    for(int i=0;i<seq_vector.size();i++)
+      {
+	values.push_back(seq_vector[i].simulated_aa_positional_frequency);
+      }
+    
+    sort(values.begin(),values.end());
+    /*for(int i=0;i<values.size();i++)
+      cout << values[i]<<" ";
+    cout <<endl;
+    */
+    vector<double>::iterator ip;
+    ip=std::unique(values.begin(),values.end());
+    values.resize(std::distance(values.begin(),ip));
+    /*for(int i=0;i<values.size();i++)
+      cout << values[i]<<" ";
+    cout <<endl;
+    */
+    for(int i=0;i<seq_vector.size();i++)
+      {
+	double v=seq_vector[i].simulated_aa_positional_frequency;
+	
+	for(int j=0;j<values.size();j++)
+	  {
+	    //cout << v<<"\t"<<values[j]<<"\t"<<j/(double)seq_vector.size()<<endl;
+	    if(v==values[j])
+	      {
+		seq_vector[i].rank=j/(double)values.size();
+		break;
+	    }
+	  }
+      }
+    
+  }
+
+  
   bool replaceTable(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input, Arguments &arg)
   {
     string UCA_aa_sequence="";
@@ -734,6 +799,7 @@ return;
     //cout << seq_vector[1]<<endl;
   }
 
+  
 };
 
 #endif

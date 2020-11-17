@@ -657,3 +657,13 @@ string findAndReplaceAll(std::string & data, std::string toSearch, std::string r
 	}
 	return newString;
 }
+
+string formatDouble(double value)
+{
+  char buffer[50];
+  
+  sprintf(buffer,"%2.2f",value);
+
+  string str(buffer);
+  return str;
+}

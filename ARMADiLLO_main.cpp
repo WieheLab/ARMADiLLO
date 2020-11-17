@@ -64,7 +64,9 @@ void helpMenu()
   cout << "\t -text : flag to print out all text files\n";
   cout << "\t -HTML : (default) flag to print out HTML files\n";
   cout << "\t -fulloutput : flag to print out all text and HTML files\n";
+  cout << "\t -annotate : flag to print out annotation of the sequences\n";
   cout << "optional arguments:\n";
+  //cout << "\t -(d)ir : sets the output directory of the files\n";
   cout << "\t -freq_dir [V, J Frequency file directory] : directory to pull the frequency tables for quick analysis\n";
   cout << "\t -amofile [amo file] : sets the amo file to use for the quick analysis\n";
   cout << "\t -resetamo   : flag to reset the amo file associated\n";
@@ -97,9 +99,11 @@ int main(int argc, char *argv[])
   string UCAtype="cloanalyst";
   string ucaname="";
   string markupFile="";
-
+  string  annotationFile;
   int num_threads=0, max_num_threads=thread::hardware_concurrency();
   bool estimate=false;
+ 
+  map<string,vector<string>> annotation;
   Arguments arguments;
   while(i<argc)
     {
@@ -181,6 +185,11 @@ int main(int argc, char *argv[])
 	{
 	  arguments.numbMutations=atoi(next_arg.c_str());
 	}
+      if (arg == "-dir" or arg=="-d")
+	{
+	  arguments.outDirectory=next_arg.c_str();
+	  
+	}
       if (arg == "-lineage" or arg == "-l")
 	{
 	  arguments.lineage=true;
@@ -212,6 +221,11 @@ int main(int argc, char *argv[])
       if(arg== "-fulloutput" || arg=="-alloutput")
 	{
 	  arguments.outputMode="all";
+	}
+      if(arg=="-annotate")
+	{
+	  cout << "turning annotation on"<<endl;
+	  arguments.annotateFlag=true;
 	}
       if (arg == "-c")
 	{
@@ -288,6 +302,10 @@ int main(int argc, char *argv[])
 	{
 	  arguments.aaMuts=next_arg;
 	}
+      if(arg=="-rank")
+	{
+	  arguments.rank=true;
+	}
       i++;
     }
   
@@ -347,7 +365,7 @@ int main(int argc, char *argv[])
        string ext =SMUA_filename.substr(pos+1);
        if(string("csv").compare(ext)==0)
 	 {
-	 read_PARTIScsv_file(SMUA_filename,SMUA_alignments_and_markup);
+	   read_PARTIScsv_file(SMUA_filename,SMUA_alignments_and_markup);
 	 }
        else if(string("yaml").compare(ext)==0)
 	 {
@@ -425,13 +443,21 @@ int main(int argc, char *argv[])
    //for(int i=0; i<SMUA_alignments_and_markup.size(); i++)
    int MAX_THREADS=num_threads;
    int size=SMUA_end;
+   if(arguments.annotateFlag)
+     {
+       for(int i=SMUA_start;i<SMUA_end;i++)
+	 {
+	   vector<string> tmp;
+	   annotation[SMUA_alignments_and_markup[i][0]]=tmp;
+	 }
+     }
    for(int i=SMUA_start;i<SMUA_end;i+=MAX_THREADS)
      {
        int number_of_threads=min(MAX_THREADS,size-i);
        vector<thread> thread_list;
        for(int j=0;j<number_of_threads;j++)
 	 {
-	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments)));
+	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments),std::ref(annotation)));
 	 }
        for(int j=0;j<number_of_threads;j++)
 	 {
@@ -446,6 +472,25 @@ int main(int argc, char *argv[])
        boost::archive::binary_oarchive outa(outfs);
        outa << v_input;
      }
+
+   if(arguments.annotateFlag)
+     {
+       int pos =SMUA_filename.find_last_of(".");
+       annotationFile=SMUA_filename.substr(0,pos)+".annotation.txt";
+
+       ofstream file_out;
+       file_out.open(annotationFile.c_str());
+       
+       for(int i=SMUA_start;i<SMUA_end;i++)
+	 {
+	   file_out << SMUA_alignments_and_markup[i][0];
+	   for(int j=0;j<annotation[SMUA_alignments_and_markup[i][0]].size();j++)
+	     {
+	       file_out << ","<<annotation[SMUA_alignments_and_markup[i][0]][j];
+	     }
+	   file_out << endl;
+	 }
+     }
    
    //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
@@ -457,7 +502,7 @@ int main(int argc, char *argv[])
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg)
+void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg, map<string,vector<string>> &annotation)
 {
   //double total_elapsed_time=0;
   //clock_t begin=clock();
@@ -482,6 +527,8 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     }
     
   NabEntry nab(SMUA_entries,arg);
+  nab.rank=arg.rank;
+  
   if(arg.clean_SMUA_first)
     {
       if (nab.cleanSMUA(arg.species,arg.chain_type,arg.replace_J_upto)<0)
@@ -519,7 +566,16 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
     {
       nab.countAAPairs(arg.aaMuts);
     }
-  nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+  vector<string> SNPs;
+  if(arg.rank)
+    SNPs=nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_rank_ladder);
+  else
+    SNPs=nab.printResults(S5F_5mers,dna_to_aa_map,arg.line_wrap_length,arg.low_prob_cutoff,arg.color_ladder);
+
+  if(arg.annotateFlag)
+    {
+      annotation[nab.sequence_name]=SNPs;
+    }
   nab.printlog();
   //clock_t end=clock();
   //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
@@ -528,7 +584,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
   return;
 }
 
-void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder)
+void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder,bool rank)
 {
   vector<vector<vector<Seq> > > split_all_sequences;
   vector2D_to_3D(all_sequences,line_wrap_length, split_all_sequences);
@@ -550,7 +606,7 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
       HTML::Table html_table;
       html_table.hclass="results";
       //convert seq vector to html table
-      convert_2D_seq_vector_to_HTML_table_for_tiles_view(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff, color_ladder, counter);
+      convert_2D_seq_vector_to_HTML_table_for_tiles_view(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff, color_ladder, counter,rank);
       //missing step: stylize the table
       
       //print HTML tables
@@ -559,18 +615,33 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
     }
 
   file_string+="<br><br><br>\n";
-  file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  /*file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
   file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">20-10\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">10-2\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">2-1\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">1.0-0.1\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">0.10-0.01\%&nbsp;&nbsp;</td> ";
-  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";
+  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";*/
+
   
   //file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
-  file_string+="</body>\n</html>\n"; 
-
+  if(rank)
+    file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Probability Rank:&nbsp;</b></font></td>";
+  else
+    file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  for(int i=6;i>-1;i--)
+    {
+      if(i==6)
+	file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td>";
+      else if(i==0)
+	file_string+="<td class=\"color_cat"+to_string(i+1)+ " mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;"+formatDouble(color_ladder[i]*100) +"\%</td>";
+      else
+	file_string+="<td class=\"color_cat"+to_string(i+1)+" mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">"+formatDouble(color_ladder[i]*100)+"-"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td> ";
+    }
+  file_string+="</tr></table></p>\n";
+  file_string+="</body>\n</html>\n";
+  
   ofstream file_out;
   file_out.open(filename.c_str());
   file_out << file_string;
@@ -1606,7 +1677,7 @@ void cleanup_SMUA_sequences(string sequence_name, string markup_header, string U
   return;
 }
 
-void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter)
+void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter, bool RANK)
 {
   //RULER
   HTML::Tr ruler1_row, ruler2_row;
@@ -1662,15 +1733,31 @@ void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2,
 	  //assign category for coloring
 	  for(int k=0; k<color_ladder.size(); k++)
 	    {
-	      if (v2[i][j].simulated_aa_positional_frequency <= color_ladder[k])
+	      if(RANK)
 		{
-		  ostringstream ss;
+		  if (v2[i][j].rank <= color_ladder[k])
+		    {
+		      ostringstream ss;
+		      if(v2[i][j].aa=="X")
+			ss << "color_cat" << 8;
+		      else
+			ss << "color_cat" << k+1;
+		      td1.hclass=ss.str();
+		      break;
+		    }
+		}
+	      else
+		{
+		  if (v2[i][j].simulated_aa_positional_frequency <= color_ladder[k])
+		    {
+		      ostringstream ss;
 		  if(v2[i][j].aa=="X")
 		    ss << "color_cat" << 8;
 		  else
 		    ss << "color_cat" << k+1;
 		  td1.hclass=ss.str();
 		  break;
+		    }
 		}
 	    }
 	  if (v2[i][j].aa=="Z"){td1.hclass="noborder"; td1.value="";}
