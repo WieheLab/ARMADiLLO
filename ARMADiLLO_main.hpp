@@ -139,7 +139,7 @@ string convert_to_string(Type);
 //map<string, map<string, string> >
 string J_genes_list(string species,string IGname);
 
-void run_entry(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &, map<string,vector<string>> &);
+void run_entry(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &, map<string,vector<string>> &,map<string,vector<Seq>> &);
 //function to run the entry object to generate simulations
 void printTileStack(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder);
 void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter);

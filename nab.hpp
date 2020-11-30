@@ -38,6 +38,7 @@ public:
   string log_cerr="";
   string outputMode="HTML";//options:HTML,none,simple,fulltext,all
   vector<bool> shield_mutations;
+  vector<Seq> aa_out;
 
   bool rank=false;
   
@@ -428,6 +429,9 @@ public:
 	all_aa_sequences.push_back(aa_seq_vector);
 	aa_sequence_names.push_back("UCA");
 	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
+
+	aa_out=all_aa_sequences[1];
+	
 	if(outputMode=="HTML"||outputMode=="all")
 	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder,rank);
 	if (outputMode=="fulltext" || outputMode=="all")

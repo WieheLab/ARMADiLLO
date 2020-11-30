@@ -451,13 +451,15 @@ int main(int argc, char *argv[])
 	   annotation[SMUA_alignments_and_markup[i][0]]=tmp;
 	 }
      }
+
+   map<string, vector<Seq> > seq_map;
    for(int i=SMUA_start;i<SMUA_end;i+=MAX_THREADS)
      {
        int number_of_threads=min(MAX_THREADS,size-i);
        vector<thread> thread_list;
        for(int j=0;j<number_of_threads;j++)
 	 {
-	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments),std::ref(annotation)));
+	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments),std::ref(annotation),std::ref(seq_map)));
 	 }
        for(int j=0;j<number_of_threads;j++)
 	 {
@@ -507,7 +509,7 @@ int main(int argc, char *argv[])
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg, map<string,vector<string>> &annotation)
+void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg, map<string,vector<string>> &annotation,map<string,vector<Seq>> &seq_map)
 {
   //double total_elapsed_time=0;
   //clock_t begin=clock();
@@ -582,6 +584,14 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       annotation[nab.sequence_name]=SNPs;
     }
   nab.printlog();
+
+  seq_map[nab.sequence_name]=nab.aa_out;
+  for(int j=0;j<seq_map[nab.sequence_name].size();j++)
+    {
+      cout << seq_map[nab.sequence_name][j].simulated_aa_positional_frequency<<"\t";
+    }
+  cout << "line 599"<<endl;
+  
   //clock_t end=clock();
   //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   //cerr << "TIME: " << nab.sequence_name << " took " << elapsed_secs << " to process\n"; 
