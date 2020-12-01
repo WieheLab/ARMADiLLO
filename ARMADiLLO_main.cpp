@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
   int num_threads=0, max_num_threads=thread::hardware_concurrency();
   bool estimate=false;
   bool reverse=false;
+  string htmlStackName="";
  
   map<string,vector<string>> annotation;
   Arguments arguments;
@@ -311,6 +312,10 @@ int main(int argc, char *argv[])
 	{
 	  reverse=true;
 	}
+      if(arg=="-stack")
+	{
+	  htmlStackName=next_arg;
+	}
       i++;
     }
   
@@ -517,7 +522,16 @@ int main(int argc, char *argv[])
    //sequence color code - need to build the inputs
    //HTML::Table html_table;
    //html_table.hclass="results";
-   printTileStack("stack.html", seq_map, sequence_names, arguments.line_wrap_length, arguments.low_prob_cutoff, arguments.color_ladder);
+   if(htmlStackName.size()>1)//test if html stack name is given
+     {
+       int len=htmlStackName.size();//if name doesn't end in html, add it
+       if(len > 3 && htmlStackName.substr(len - 4)!="html")
+	{
+	  htmlStackName=htmlStackName+".html";
+	}
+       //pass to function to take the seq_map and create the html
+      printTileStack(htmlStackName, seq_map, sequence_names, arguments.line_wrap_length, arguments.low_prob_cutoff, arguments.color_ladder);
+     }
 
    //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
@@ -1744,6 +1758,21 @@ void printTileStack(string filename, map<string,vector<Seq>> &seq_map, vector<st
       html_table.print(file_string);
       file_string+="<p></p>\n"; 
     }
+
+
+file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  for(int i=6;i>-1;i--)
+    {
+      if(i==6)
+	file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td>";
+      else if(i==0)
+	file_string+="<td class=\"color_cat"+to_string(i+1)+ " mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;"+formatDouble(color_ladder[i]*100) +"\%</td>";
+      else
+	file_string+="<td class=\"color_cat"+to_string(i+1)+" mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">"+formatDouble(color_ladder[i]*100)+"-"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td> ";
+    }
+  file_string+="</tr></table></p>\n";
+
+  
   file_string+="<body>\n</html>\n"; 
 
   ofstream file_out;
