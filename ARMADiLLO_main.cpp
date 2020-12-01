@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
   string  annotationFile;
   int num_threads=0, max_num_threads=thread::hardware_concurrency();
   bool estimate=false;
+  bool reverse=false;
  
   map<string,vector<string>> annotation;
   Arguments arguments;
@@ -306,6 +307,10 @@ int main(int argc, char *argv[])
 	{
 	  arguments.rank=true;
 	}
+      if(arg=="-reverse")
+	{
+	  reverse=true;
+	}
       i++;
     }
   
@@ -396,6 +401,21 @@ int main(int argc, char *argv[])
        cout << "exiting"<<endl;
        exit(1);
        return 0;
+     }
+
+   if(reverse)//records name either reverse or forward
+     {
+       for(int j=SMUA_alignments_and_markup.size()-1;  j>-1; j--)
+	 {
+	   sequence_names.push_back(SMUA_alignments_and_markup[j][0]);
+	 }
+     }
+   else
+     {
+       for(int j=0;  j<SMUA_alignments_and_markup.size(); j++)
+	 {
+	   sequence_names.push_back(SMUA_alignments_and_markup[j][0]);
+	 }
      }
    
    cerr << "highlighting residues with less than " << arguments.low_prob_cutoff << " probability for mutation\n"; 
@@ -497,7 +517,7 @@ int main(int argc, char *argv[])
    //sequence color code - need to build the inputs
    //HTML::Table html_table;
    //html_table.hclass="results";
-   //printTileStack(output_filename, all_sequences, all_sequences_names, line_wrap_length, low_prob_cutoff, color_ladder);
+   printTileStack("stack.html", seq_map, sequence_names, arguments.line_wrap_length, arguments.low_prob_cutoff, arguments.color_ladder);
 
    //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
@@ -584,14 +604,10 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       annotation[nab.sequence_name]=SNPs;
     }
   nab.printlog();
-
-  seq_map[nab.sequence_name]=nab.aa_out;
-  for(int j=0;j<seq_map[nab.sequence_name].size();j++)
-    {
-      cout << seq_map[nab.sequence_name][j].simulated_aa_positional_frequency<<"\t";
-    }
-  cout << "line 599"<<endl;
   
+  seq_map[nab.sequence_name]=nab.aa_out;//creates the aa_out map to pass to the tile out function
+
+
   //clock_t end=clock();
   //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   //cerr << "TIME: " << nab.sequence_name << " took " << elapsed_secs << " to process\n"; 
@@ -1692,8 +1708,15 @@ void cleanup_SMUA_sequences(string sequence_name, string markup_header, string U
   return;
 }
 
-void printTileStack(string filename, vector<vector<Seq> > &all_sequences, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder)
+void printTileStack(string filename, map<string,vector<Seq>> &seq_map, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder)
 {
+  vector<vector<Seq> > all_sequences;
+
+  for(int i=0; i<sequence_names.size(); i++)
+    {
+      all_sequences.push_back(seq_map[sequence_names[i]]);
+    }
+
   vector<vector<vector<Seq> > > split_all_sequences;
   vector2D_to_3D(all_sequences,line_wrap_length, split_all_sequences);
   ///output html header
@@ -1721,7 +1744,6 @@ void printTileStack(string filename, vector<vector<Seq> > &all_sequences, vector
       html_table.print(file_string);
       file_string+="<p></p>\n"; 
     }
-
   file_string+="<body>\n</html>\n"; 
 
   ofstream file_out;
