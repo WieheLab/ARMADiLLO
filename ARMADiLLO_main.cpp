@@ -102,6 +102,8 @@ int main(int argc, char *argv[])
   string  annotationFile;
   int num_threads=0, max_num_threads=thread::hardware_concurrency();
   bool estimate=false;
+  bool reverse=false;
+  string htmlStackName="";
  
   map<string,vector<string>> annotation;
   Arguments arguments;
@@ -306,6 +308,14 @@ int main(int argc, char *argv[])
 	{
 	  arguments.rank=true;
 	}
+      if(arg=="-reverse")
+	{
+	  reverse=true;
+	}
+      if(arg=="-stack")
+	{
+	  htmlStackName=next_arg;
+	}
       i++;
     }
   
@@ -397,6 +407,21 @@ int main(int argc, char *argv[])
        exit(1);
        return 0;
      }
+
+   if(reverse)//records name either reverse or forward
+     {
+       for(int j=SMUA_alignments_and_markup.size()-1;  j>-1; j--)
+	 {
+	   sequence_names.push_back(SMUA_alignments_and_markup[j][0]);
+	 }
+     }
+   else
+     {
+       for(int j=0;  j<SMUA_alignments_and_markup.size(); j++)
+	 {
+	   sequence_names.push_back(SMUA_alignments_and_markup[j][0]);
+	 }
+     }
    
    cerr << "highlighting residues with less than " << arguments.low_prob_cutoff << " probability for mutation\n"; 
    ///amino acids vector
@@ -451,13 +476,15 @@ int main(int argc, char *argv[])
 	   annotation[SMUA_alignments_and_markup[i][0]]=tmp;
 	 }
      }
+
+   map<string, vector<Seq> > seq_map;
    for(int i=SMUA_start;i<SMUA_end;i+=MAX_THREADS)
      {
        int number_of_threads=min(MAX_THREADS,size-i);
        vector<thread> thread_list;
        for(int j=0;j<number_of_threads;j++)
 	 {
-	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments),std::ref(annotation)));
+	   thread_list.push_back(thread(run_entry,std::ref(S5F_5mers),std::ref(dna_to_aa_map),SMUA_alignments_and_markup[i+j],std::ref(v_input),std::ref(arguments),std::ref(annotation),std::ref(seq_map)));
 	 }
        for(int j=0;j<number_of_threads;j++)
 	 {
@@ -491,7 +518,21 @@ int main(int argc, char *argv[])
 	   file_out << endl;
 	 }
      }
-   
+
+   //sequence color code - need to build the inputs
+   //HTML::Table html_table;
+   //html_table.hclass="results";
+   if(htmlStackName.size()>1)//test if html stack name is given
+     {
+       int len=htmlStackName.size();//if name doesn't end in html, add it
+       if(len > 3 && htmlStackName.substr(len - 4)!="html")
+	{
+	  htmlStackName=htmlStackName+".html";
+	}
+       //pass to function to take the seq_map and create the html
+      printTileStack(htmlStackName, seq_map, sequence_names, arguments.line_wrap_length, arguments.low_prob_cutoff, arguments.color_ladder);
+     }
+
    //cerr << "TOTAL ELAPSED TIME: " << total_elapsed_time << "\n"; 
    return 0;
 }
@@ -502,7 +543,7 @@ int main(int argc, char *argv[])
 ///
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg, map<string,vector<string>> &annotation)
+void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, vector<string>  SMUA_entries, map<string,map<int, map<char,double> >> &v_input, Arguments &arg, map<string,vector<string>> &annotation,map<string,vector<Seq>> &seq_map)
 {
   //double total_elapsed_time=0;
   //clock_t begin=clock();
@@ -577,6 +618,10 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       annotation[nab.sequence_name]=SNPs;
     }
   nab.printlog();
+  
+  seq_map[nab.sequence_name]=nab.aa_out;//creates the aa_out map to pass to the tile out function
+
+
   //clock_t end=clock();
   //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
   //cerr << "TIME: " << nab.sequence_name << " took " << elapsed_secs << " to process\n"; 
@@ -1677,6 +1722,65 @@ void cleanup_SMUA_sequences(string sequence_name, string markup_header, string U
   return;
 }
 
+void printTileStack(string filename, map<string,vector<Seq>> &seq_map, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder)
+{
+  vector<vector<Seq> > all_sequences;
+
+  for(int i=0; i<sequence_names.size(); i++)
+    {
+      all_sequences.push_back(seq_map[sequence_names[i]]);
+    }
+
+  vector<vector<vector<Seq> > > split_all_sequences;
+  vector2D_to_3D(all_sequences,line_wrap_length, split_all_sequences);
+  ///output html header
+  string file_string="";
+  file_string+="<html xmlns='http://www.w3.org/1999/xhtml' xml:lang='en'>\n"; 
+  file_string+="<head>\n"; 
+  file_string+=" <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n";
+  file_string+=" <title>Antibody Mutation Analysis</title>\n"; 
+  file_string+=" <link rel='stylesheet' href='sequence_color.css' />\n"; 
+  file_string+="</head>\n"; 
+  file_string+="<body>\n";
+  file_string+="<p></p><br>\n"; 
+  //cerr << "number of splits: " << split_all_sequences.size() << "\n"; 
+  //for each split, make a HTML table and print it
+  int counter=1;
+  for(int i=0; i<split_all_sequences.size(); i++)
+    {
+      HTML::Table html_table;
+      html_table.hclass="results";
+      //convert seq vector to html table
+      convert_2D_seq_vector_to_HTML_table(split_all_sequences[i],sequence_names,html_table, low_prob_cutoff, color_ladder, counter);
+      //missing step: stylize the table
+      
+      //print HTML tables
+      html_table.print(file_string);
+      file_string+="<p></p>\n"; 
+    }
+
+
+file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  for(int i=6;i>-1;i--)
+    {
+      if(i==6)
+	file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td>";
+      else if(i==0)
+	file_string+="<td class=\"color_cat"+to_string(i+1)+ " mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;"+formatDouble(color_ladder[i]*100) +"\%</td>";
+      else
+	file_string+="<td class=\"color_cat"+to_string(i+1)+" mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">"+formatDouble(color_ladder[i]*100)+"-"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td> ";
+    }
+  file_string+="</tr></table></p>\n";
+
+  
+  file_string+="<body>\n</html>\n"; 
+
+  ofstream file_out;
+  file_out.open(filename.c_str());
+  file_out << file_string;
+  file_out.close();
+}
+
 void convert_2D_seq_vector_to_HTML_table_for_tiles_view(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter, bool RANK)
 {
   //RULER
@@ -1916,6 +2020,110 @@ void read_V(const std::string & dirname, map<string,map<int, map<char,double> >>
   closedir(dpdf);
   return ;
 }
+void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter)
+{
+
+  //RULER
+  HTML::Tr ruler1_row, ruler2_row;
+  HTML::Td ruler1("ruler","","","","");
+  HTML::Td ruler2("ruler","","","","");
+  ruler1_row.cols.push_back(ruler1);
+  ruler2_row.cols.push_back(ruler2);
+
+  if (v2.size()==0){cerr << "No data for HTML table. Exiting\n"; exit(1);}
+  for(int j=0; j<v2[0].size(); j++) ///iterate over cols
+    {
+      ruler1.value=""; 
+      ruler2.value="";
+      if ((counter+j)%10==0)
+	{
+	  ostringstream s;
+	  s<<counter+j;
+	  ruler1.value=s.str();
+	  ruler2.value="|";
+	}
+      else if ((counter+j)%5==0){ruler2.value="|";}
+      ruler1_row.cols.push_back(ruler1);
+      ruler2_row.cols.push_back(ruler2);
+    }      
+  counter+=v2[0].size();
+
+  html_table.rows.push_back(ruler1_row);
+  html_table.rows.push_back(ruler2_row);
+
+  //REST OF ROWS
+  for(int i=0; i<v2.size(); i++) ///iterate over rows
+    {
+      HTML::Tr row1, cdr_row, spacer_row; 
+    
+      //string str0="this";
+      HTML::Td td0("seq_name","","","",names[i]);
+      HTML::Td blank("noborder","","","","");
+   
+      row1.cols.push_back(td0);
+      cdr_row.cols.push_back(blank);
+      spacer_row.cols.push_back(blank);
+
+      for(int j=0; j<v2[i].size(); j++) ///iterate over cols
+	{
+	  string str1="<div class=\"sm\">"+v2[i][j].aa+"</div>"; //
+	  HTML::Td td1("","","","",str1);
+	  HTML::Td td_cdr("noborder","","","","");
+	  HTML::Td spacer("spacer","","","","");
+	  //assign category for coloring
+	  for(int k=0; k<color_ladder.size(); k++)
+	    {
+	      if (v2[i][j].simulated_aa_positional_frequency <= color_ladder[k])
+		{
+		  ostringstream ss;
+		  ss << "color_cat" << k+1;
+		  
+		  td1.hclass=ss.str();
+		  break;
+		}
+	    }
+	  // cout << names[i] << "\t" << v2[i][j].aa_num << "\t" << v2[i][j].aa <<  "\t" <<  v2[i][j].base << "\t" << v2[i][j].simulated_aa_positional_frequency << "\t" << td1.hclass << "\n";
+	  
+	  if (v2[i][j].aa=="Z"){td1.hclass="noborder"; td1.value="";}
+	  if ((v2[i][j].CDR_markup=="1")||(v2[i][j].CDR_markup=="2")||(v2[i][j].CDR_markup=="3")){td_cdr.hclass="CDR";}
+	  if (v2[i][j].isMut){td1.hclass+=" mut";}
+	
+	  row1.cols.push_back(td1); //row 1: amino acid
+	  cdr_row.cols.push_back(td_cdr); //row 0 CDR line
+	  spacer_row.cols.push_back(spacer);//row 2 spacer line
+	}
+
+      //collapse cdr row elements
+      for(int j=0; j<cdr_row.cols.size(); j++)
+	{
+	  if ( (((j==0)&&cdr_row.cols[j].hclass=="CDR")) || ((j>0)&&(cdr_row.cols[j-1].hclass!="CDR")&&(cdr_row.cols[j].hclass=="CDR"))    ) //start of CDR
+	    {
+	      int cdr_start=j;
+	      int k=j;
+	      while ((cdr_row.cols[k].hclass=="CDR")&&(k<cdr_row.cols.size()))
+		{
+		  k++;
+		}
+	      int cdr_end=k-1;
+	      //cerr << cdr_start << "\t" << cdr_end << "\n"; 
+	      // int d; cin >> d;
+	      ostringstream s;
+	      s<<cdr_end-cdr_start+1;
+	      cdr_row.cols[cdr_start].colspan=s.str();
+	      if (cdr_end-cdr_start>=1){
+		cdr_row.cols.erase(cdr_row.cols.begin()+cdr_start+1, cdr_row.cols.begin()+cdr_end+1);}
+	     
+	    }
+	}
+
+      html_table.rows.push_back(cdr_row);
+      html_table.rows.push_back(row1);
+      html_table.rows.push_back(spacer_row);
+    }
+
+  return;
+}
+
 
 //map<string, map<string, string> >
 string J_genes_list(string species,string IGname)

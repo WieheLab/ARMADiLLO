@@ -38,6 +38,7 @@ public:
   string log_cerr="";
   string outputMode="HTML";//options:HTML,none,simple,fulltext,all
   vector<bool> shield_mutations;
+  vector<Seq> aa_out;
 
   bool rank=false;
   
@@ -381,7 +382,51 @@ public:
     if (mut_count==0) 
       { 
 	log_cerr += "0 mutations found\n";   
-	log_cout += sequence_name + "\t" + to_string(aa_mut_count) + "\t" + to_string(mut_count) + "\t0\t 0\t0\t0\t"+ to_string(insertion_count)+ "\t"+to_string(deletion_count)+"\t"+to_string((insertion_count+deletion_count)/3) + "\t" +to_string(CDR3_length)+"\t"+to_string(PPvalue/AAseqLen)+ "\n"; 
+	log_cout += sequence_name + "\t" + to_string(aa_mut_count) + "\t" + to_string(mut_count) + "\t0\t 0\t0\t0\t"+ to_string(insertion_count)+ "\t"+to_string(deletion_count)+"\t"+to_string((insertion_count+deletion_count)/3) + "\t" +to_string(CDR3_length)+"\t"+to_string(PPvalue/AAseqLen)+ "\n";
+
+
+	//for no mutation sequences
+	vector<vector<Seq> > all_sequences;
+	all_sequences.push_back(UCA_seq_vector);
+	all_sequences.push_back(seq_vector);
+	for(int j=0; j<seq_vector.size(); j+=3)
+	  {
+	    if (seq_vector[j].aa != UCA_seq_vector[j].aa)
+	      {
+		char snp[11];
+		//
+		if(rank)
+		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
+		else
+		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
+
+		//sprintf(snp,"%s%d%s:%0.6f:%0.5f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].rank,seq_vector[j].simulated_aa_positional_frequency);
+		string snpStr(snp);
+		seq_vector[j].isMut=true;
+		SNPs.push_back(snpStr.c_str());
+	      }
+	    else
+	      {
+		seq_vector[j].isMut=false;
+		seq_vector[j].simulated_aa_positional_frequency=1;
+	      }
+	    UCA_seq_vector[j].isMut=false;
+	    UCA_seq_vector[j].simulated_aa_positional_frequency=1;
+	    aa_UCA_seq_vector.push_back(UCA_seq_vector[j]);
+	    aa_seq_vector.push_back(seq_vector[j]);
+	  }
+	vector<vector<Seq> > all_aa_sequences;
+	vector<string> aa_sequence_names;
+	all_aa_sequences.push_back(aa_UCA_seq_vector);
+	all_aa_sequences.push_back(aa_seq_vector);
+	aa_sequence_names.push_back("UCA");
+	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
+
+	aa_out=all_aa_sequences[1];
+
+
+
+	
       }
     else
       {
@@ -428,6 +473,9 @@ public:
 	all_aa_sequences.push_back(aa_seq_vector);
 	aa_sequence_names.push_back("UCA");
 	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
+
+	aa_out=all_aa_sequences[1];
+	
 	if(outputMode=="HTML"||outputMode=="all")
 	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder,rank);
 	if (outputMode=="fulltext" || outputMode=="all")
@@ -436,13 +484,10 @@ public:
 	  }
 	
       }
-	//cout << "line412"<<endl;
     if(outputMode=="all" || outputMode=="fulltext")
       print_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs);
-//	cout << "line415"<<endl;
     if(outputMode=="HTML" || outputMode=="all")
       print_HTML_freq_table_to_file(output_freq_table,mature_mutant_positional_aa_freqs,UCA_aa_sequence,color_ladder);
-//	cout << "lineline418"<<endl;
     if(outputMode=="simple" || outputMode=="fulltext" || outputMode=="all")
       {
 	simpleTextPrintOut(sequence_name+".ARMADiLLO.fasta",aa_sequence,UCA_aa_sequence,seq_vector);
