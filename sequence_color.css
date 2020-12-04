@@ -63,7 +63,7 @@ td.color_cat4 {
 td.color_cat5 {
     /*background-color: #ffffff;*/
     /*background-color: #ffffb2;*/
-    background-color: #00ff00;
+    background-color: #c1f0c1;
 }
 td.color_cat6 {
     background-color: #ffffcc;
@@ -72,7 +72,8 @@ td.color_cat7 {
     background-color: #ffffcc;
 }
 td.color_cat6.mut{
-    background-color: #009900;
+    background-color: #33cc33;
+        color: #ffffff;
 }
 td.color_cat7.mut{
     background-color: #0f3e0f;
