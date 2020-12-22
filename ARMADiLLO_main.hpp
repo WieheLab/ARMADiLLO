@@ -62,6 +62,7 @@ public:
   double S5F_mut_score;
   double simulated_aa_positional_frequency;
   double rank;
+  double percentile;
   string CDR_markup;
   bool isMut;
   map<char,double> all_simulated_aa_positional_frequencies_map;

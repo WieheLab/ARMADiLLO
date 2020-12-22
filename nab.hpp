@@ -376,14 +376,13 @@ public:
 	    PPvalue+=log(seq_vector[j].simulated_aa_positional_frequency);
 	  }
       }
-    generateRanking(seq_vector);
+    generateRanking(seq_vector,mature_mutant_positional_aa_freqs);
     
     int AAseqLen= UCA_seq_vector.size()/3;
     if (mut_count==0) 
       { 
 	log_cerr += "0 mutations found\n";   
 	log_cout += sequence_name + "\t" + to_string(aa_mut_count) + "\t" + to_string(mut_count) + "\t0\t 0\t0\t0\t"+ to_string(insertion_count)+ "\t"+to_string(deletion_count)+"\t"+to_string((insertion_count+deletion_count)/3) + "\t" +to_string(CDR3_length)+"\t"+to_string(PPvalue/AAseqLen)+ "\n";
-
 
 	//for no mutation sequences
 	vector<vector<Seq> > all_sequences;
@@ -423,9 +422,6 @@ public:
 	aa_sequence_names.push_back(sequence_name.substr(0,min(20,int(sequence_name.length()))));
 
 	aa_out=all_aa_sequences[1];
-
-
-
 	
       }
     else
@@ -568,44 +564,39 @@ public:
     return true;
   }
 
-
-  void generateRanking(vector<Seq> &seq_vector)
+  void generateRanking(vector<Seq> &seq_vector,  map<int, map<char,double> > &positional_aa_freqs)
   {
-    vector<double> values;
-    for(int i=0;i<seq_vector.size();i++)
+    vector<double> values_list;
+    for(int j=0; j<positional_aa_freqs.size(); j++)
       {
-	values.push_back(seq_vector[i].simulated_aa_positional_frequency);
-      }
-    
-    sort(values.begin(),values.end());
-    /*for(int i=0;i<values.size();i++)
-      cout << values[i]<<" ";
-    cout <<endl;
-    */
-    vector<double>::iterator ip;
-    ip=std::unique(values.begin(),values.end());
-    values.resize(std::distance(values.begin(),ip));
-    /*for(int i=0;i<values.size();i++)
-      cout << values[i]<<" ";
-    cout <<endl;
-    */
-    for(int i=0;i<seq_vector.size();i++)
-      {
-	double v=seq_vector[i].simulated_aa_positional_frequency;
-	
-	for(int j=0;j<values.size();j++)
+	for(int i=0; i<amino_acids.size(); i++)
 	  {
-	    //cout << v<<"\t"<<values[j]<<"\t"<<j/(double)seq_vector.size()<<endl;
-	    if(v==values[j])
-	      {
-		seq_vector[i].rank=j/(double)values.size();
-		break;
-	    }
+	    values_list.push_back(positional_aa_freqs[j][amino_acids[i]]);
 	  }
       }
     
-  }
+    sort(values_list.begin(),values_list.end());//sorting the values
+    vector<double>::iterator ip;
+    ip=std::unique(values_list.begin(),values_list.begin()+values_list.size());//takes only unique values
+    values_list.resize(std::distance(values_list.begin(),ip));
 
+    for(int i=0;i<seq_vector.size();i++)
+      {
+	int p=0;
+	double v=seq_vector[i].simulated_aa_positional_frequency;
+	for(int j=0;j<values_list.size();j++)
+	  {
+	    if(v==values_list[j])
+	      {
+		p=values_list.size()-j;//counts back
+		continue;
+	      }
+	  }
+	
+	seq_vector[i].rank=p;
+	seq_vector[i].percentile=(double)p/(double)values_list.size();
+      }
+  }
   
   bool replaceTable(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input, Arguments &arg)
   {

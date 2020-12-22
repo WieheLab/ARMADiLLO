@@ -714,7 +714,36 @@ void print_freq_table_to_file(string filename,  map<int, map<char,double> > &pos
       file_out << "\n";
     }
   file_out.close();
- 
+
+  /*  vector<string> mutation_list;
+  vector<float> values_list;
+  
+  for(int j=0; j<positional_aa_freqs.size(); j++)
+    {
+      string mut;
+      for(int i=0; i<amino_acids.size(); i++)
+	{
+	  mut=to_string(positional_aa_freqs[j][amino_acids[i]])+"_"+amino_acids[i]+to_string(j);
+	  mutation_list.push_back(mut);
+	  values_list.push_back(positional_aa_freqs[j][amino_acids[i]]);
+	}
+    }
+
+  sort(mutation_list.begin(),mutation_list.end());
+  for(int i=0; i<mutation_list.size();i++)
+    {
+      //cout << mutation_list[i]<<endl;
+    }
+
+  sort(values_list.begin(),values_list.end());
+  vector<float>::iterator ip;
+  ip=std::unique(values_list.begin(),values_list.begin()+values_list.size());
+  values_list.resize(std::distance(values_list.begin(),ip));
+  
+  for(int i=0;i<values_list.size();i++)
+    cout << values_list[i]<<endl;
+  */
+  
 }
 
 
