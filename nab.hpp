@@ -58,6 +58,26 @@ public:
     ignoreJ=arg.ignoreJ;
     ignoreV=arg.ignoreV;
     outputMode=arg.outputMode;
+
+	
+    if(UCA_sequence.length()>sequence.length())
+      {
+	UCA_sequence=UCA_sequence.substr(0,sequence.length());
+	markup_string=markup_string.substr(0,sequence.length());
+      }
+    for(int j=max(UCA_sequence.length(),sequence.length())-1;j>0;j--)
+      {
+	if(sequence[j]=='-' && sequence.length()%3>0)
+	  {
+	    UCA_sequence=UCA_sequence.substr(0,j);
+	    sequence=sequence.substr(0,j);
+	    markup_string=markup_string.substr(0,j);
+	  }
+	else
+	  {
+	    break;
+	  }
+      }
     
     for(int j=0; j<UCA_sequence.length(); j++)
       {
