@@ -60,11 +60,26 @@ public:
     outputMode=arg.outputMode;
 
 	
-    if(UCA_sequence.length()>sequence.length())
+    if(UCA_sequence.length()!=sequence.length())
       {
-	UCA_sequence=UCA_sequence.substr(0,sequence.length());
-	markup_string=markup_string.substr(0,sequence.length());
+	if(UCA_sequence.length()==sequence.length()+1)//if UCA is just one longer
+	  {
+	    UCA_sequence=UCA_sequence.substr(0,sequence.length());
+	    markup_string=markup_string.substr(0,sequence.length());
+	  }
+	else//alignment if sequences are different sizes
+	  {
+	  string newUCA,newSeq;
+	  map<char,map<char,int> > scoring_matrix;
+	  load_EDNAFULL_matrix(scoring_matrix);
+	  double gap_open=-20, gap_extend=-2, score=0;
+    
+	  pairwise_align_sequences_semiglobal_w_affine_gap(scoring_matrix, UCA_sequence,sequence ,gap_open,gap_extend,newUCA, newSeq,score);
+	  UCA_sequence=newUCA;
+	  sequence=newSeq;
+	  }
       }
+    
     for(int j=max(UCA_sequence.length(),sequence.length())-1;j>0;j--)
       {
 	if(sequence[j]=='-' && sequence.length()%3>0)
@@ -115,6 +130,7 @@ public:
 	output_freq_table=sequence_name+".N"+to_string(arg.numbMutations)+".freq_table.txt";
       }
   }
+  
   void printlog()
   {
     cerr << log_cerr;
