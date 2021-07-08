@@ -510,10 +510,13 @@ int main(int argc, char *argv[])
        
        for(int i=SMUA_start;i<SMUA_end;i++)
 	 {
-	   file_out << SMUA_alignments_and_markup[i][0];
+	   file_out << SMUA_alignments_and_markup[i][0]<<";";
 	   for(int j=0;j<annotation[SMUA_alignments_and_markup[i][0]].size();j++)
 	     {
-	       file_out << ","<<annotation[SMUA_alignments_and_markup[i][0]][j];
+	       if(j==0)
+		 file_out << annotation[SMUA_alignments_and_markup[i][0]][j];
+	       else
+		 file_out << ","<<annotation[SMUA_alignments_and_markup[i][0]][j];
 	     }
 	   file_out << endl;
 	 }
