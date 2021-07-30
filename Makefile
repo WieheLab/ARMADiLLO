@@ -4,8 +4,10 @@ cxx=/usr/bin/g++
 flags=-ggdb -O3 -std=c++11
 
 ifneq (,$(findstring dhvi,$(shell uname -n)))#links and libs for duke cluster
-	links=-I/datacommons/dhvi/scripts/lib/boost/ -L /datacommons/dhvi/scripts/lib/boost/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
-	libs=/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/lib/libboost_serialization.a
+	links=-I/datacommons/dhvi/scripts/lib/boost/boost_1_70_0/ -L/datacommons/dhvi/scripts/lib/boost/boost_1_70_0/stage/lib/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
+	#links=-I/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/include/ -L/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/lib/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
+	libs=/datacommons/dhvi/scripts/lib/boost/boost_1_70_0/stage/lib/libboost_serialization.a
+	#libs=/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/lib/libboost_serialization.a
 else ifneq (,$(findstring Darwin,$(shell uname -s)))#links and libs for osx
 	#links=-I/opt/local/include/  #-L/opt/local/include/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
 	links=-I/usr/local/lib
