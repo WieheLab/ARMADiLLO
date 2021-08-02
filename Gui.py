@@ -9,9 +9,9 @@ import PySimpleGUI as sg
 
 
 def main():
-   sg.theme('DarkAmber')
-   layout=[ [sg.Text("xxxxxxxxxx")],[sg.Text('enter somthing on Row 2'), sg.InputText()],[sg.Button('OK'),sg.Button('Cancel')] ]
-   window=sg.Window('Window Title',layout)
+   sg.theme('DarkTeal6')
+   layout=[ [sg.Text("ARMADiLLO")],[sg.Text('enter somthing on Row 2'), sg.InputText()],[sg.FilesBrowse('Select')],[sg.Text('second text lin')],[sg.Button('Run'),sg.Button('OK'),sg.Button('Cancel')] ]
+   window=sg.Window('ARMADiLLO GUI',layout)
    while True:
       event, values=window.read()
       if event == sg.WIN_CLOSED or event == 'Cancel':
