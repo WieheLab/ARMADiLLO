@@ -531,9 +531,9 @@ public:
   {
     if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence))
       {
-	log_cerr+= "germline has stop codon...skipping this sequence\n"; 
-	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A - UCA has stop codon\n"; 
-	return false;
+    	log_cerr+= "germline has stop codon...skipping this sequence\n"; 
+    	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A - UCA has stop codon\n"; 
+    	return false;
       }
     int stop_codon_count=0;
     int _mut_count=mut_count;
