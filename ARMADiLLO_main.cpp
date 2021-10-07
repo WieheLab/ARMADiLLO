@@ -585,6 +585,7 @@ void run_entry(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map,
       nab.replaceUCA(dna_to_aa_map,arg.input_UCA_sequence,arg.ignore_warnings);
       nab.markup_mask=nab.parseMarkup();
     }
+  //cout << arg.ignoreV<<"\t"<<arg.ignore_CDR3<<"\t"<<arg.ignoreJ<<endl;
   nab.createShield(arg.ignore_CDR3,arg.ignoreV,arg.ignoreJ);
   if(arg.quick)
     {
@@ -983,7 +984,7 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
     {
       vector<double> mut_scores(sequence.length(), 0.0);
       double sum_mut_scores=0;
-      get_mutability_scores(S5F_model, sequence, last_mutate_position, is_shielded, shield_mutations, last_mut_scores, mut_scores, last_sum_mut_scores, sum_mut_scores);
+      get_mutability_scores(S5F_model, sequence, last_mutate_position, is_shielded, shield_mutations, last_mut_scores, mut_scores, last_sum_mut_scores, sum_mut_scores);     
       last_mut_scores=mut_scores;
       last_sum_mut_scores=sum_mut_scores;
       if(mut_scores.size() != shield_mutations.size())
@@ -1000,6 +1001,12 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
 	{
 	  mut_probability_ladder[i]=mut_probability_ladder[i-1]+(mut_scores[i]/(double) sum_mut_scores); 
 	}
+
+      //cout << "ladder"<<endl;
+      //for(int x=0;x<mut_probability_ladder.size();x++)
+      //cout << mut_probability_ladder[x]<<" ";
+      //cout << endl;
+
       //clock_t mut_ladder=clock();
       ///draw position randomly according to probability ladder
       double R=dis(gen);
@@ -1008,6 +1015,8 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
 
       for(int i=0; i<mut_probability_ladder.size(); i++)  ///OPTIMIZE: combine the two loops into one
 	{
+	  //cout << i<<" ";
+	  
 	  if (R<mut_probability_ladder[i] && !shield_mutations[i])
 	    {
 	      mutate_position_i=i;
@@ -1023,7 +1032,6 @@ int simulate_S5F_mutation(string sequence, int &num_mutations, map<string,S5F_mu
 	      break;
 	    }
 	}
-
       //end=clock();
       //elapsed = double(end - begin);// / CLOCKS_PER_SEC;
       //cerr << "LADDER BUILDING: " << elapsed << "\n";

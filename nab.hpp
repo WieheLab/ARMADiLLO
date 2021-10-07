@@ -109,7 +109,7 @@ public:
     //	boost::filesystem::create_directory(arg.outDirectory);
     //	cout << "outdir not empty";
     //  }
-    
+
     if(arg.numbMutations<0)
       {
 	output_filename=sequence_name+".ARMADiLLO.html";
@@ -296,6 +296,7 @@ public:
 	else if(ignoreJ && markup_mask[j]=="J")
 	  shield_mutations[j]=true;
       }
+    
   }
 
   int cleanSMUA(string species, string chain_type,int replace_J_upto)
@@ -373,7 +374,6 @@ public:
     translate_dna_to_aa(sequence, aa_sequence, 1, dna_to_aa_map);
     translate_dna_to_aa(UCA_sequence, UCA_aa_sequence, 1, dna_to_aa_map);
     number_of_mutations_two_seqs(UCA_aa_sequence, aa_sequence, aa_mut_count);
-    
     ///annotate seq vector with positional aa freq
     for(int j=0; j<seq_vector.size(); j++) //per position
       {
@@ -402,7 +402,7 @@ public:
 	if (j+1<seq_vector.size()){if(seq_vector[j+1].base=="-"){continue;}}
 	if (j+2<seq_vector.size()){if(seq_vector[j+2].base=="-"){continue;}}
 	
-	//if (shield_mutations[j]){continue;}
+	if (shield_mutations[j]){continue;}
 	if (seq_vector[j].simulated_aa_positional_frequency<.02){p02_count++;}
 	if (seq_vector[j].simulated_aa_positional_frequency<.01){p01_count++;}
 	if (seq_vector[j].simulated_aa_positional_frequency<.001){p001_count++;}
