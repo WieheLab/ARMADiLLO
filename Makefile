@@ -13,9 +13,9 @@ else ifneq (,$(findstring Darwin,$(shell uname -s)))#links and libs for osx
 	links=-I/usr/local/lib
 	libs=/usr/local/lib/libboost_serialization-mt.a
 	#libs=/opt/local/lib/libboost_serialization-mt.dylib
-else #links for linux
-	links=-L/usr/lib/x86_64-linux-gnu/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
-	libs=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
+else #links for standard linux instillation
+	links=-L/usr/lib/x86_64-linux-gnu/ -lboost_filesystem -lboost_system -lboost_serialization -pthread #links flag should be modified if boost library can not be found
+	libs=/usr/lib/x86_64-linux-gnu/libboost_serialization.a #libs flag, should be modified to point to the required library
 endif
 
 
