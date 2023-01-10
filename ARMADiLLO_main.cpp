@@ -664,22 +664,22 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
     }
 
   file_string+="<br><br><br>\n";
-  /*file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
   file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">20-10\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">10-2\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">2-1\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">1.0-0.1\%&nbsp;&nbsp;</td>";
   file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">0.10-0.01\%&nbsp;&nbsp;</td> ";
-  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";*/
+  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";
 
   
   //file_string+="<p><br></p><p align=\"center\"><img src=\"Mutation_Probability_legend.png\" alt=\"Mutation Probability Legend\" height=\"25\"></p>\n";
   if(rank)
-    file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Probability Rank:&nbsp;</b></font></td>";
+    file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Probability Rank-legend Broke:&nbsp;</b></font></td>";
   else
     file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
-  for(int i=6;i>-1;i--)
+  /*for(int i=6;i>-1;i--)
     {
       if(i==6)
 	file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td>";
@@ -687,7 +687,7 @@ void print_output_for_tiles_view(string filename, vector<vector<Seq> > &all_sequ
 	file_string+="<td class=\"color_cat"+to_string(i+1)+ " mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;"+formatDouble(color_ladder[i]*100) +"\%</td>";
       else
 	file_string+="<td class=\"color_cat"+to_string(i+1)+" mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">"+formatDouble(color_ladder[i]*100)+"-"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td> ";
-    }
+	}*/
   file_string+="</tr></table></p>\n";
   file_string+="</body>\n</html>\n";
   
@@ -1230,7 +1230,10 @@ void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string>
 		 }
 	       if (v2[i][j].base!=v2[0][j].base)//dna mutation
 		 {
-		   td3.style="color:#4d0000";
+		   if(td3.hclass!="highlightcoldspot" && td3.hclass!="highlighthotspot")
+		     {
+		       td3.style="color:#4d0000";
+		     }
 		   if (i==v2.size()-1)
 		     {
 		       if ((v2[0][j].S5F_mut_score<.3)&&(v2[0][j].S5F_mut_score!=-1))
@@ -1799,8 +1802,16 @@ void printTileStack(string filename, map<string,vector<Seq>> &seq_map, vector<st
       file_string+="<p></p>\n"; 
     }
 
+  file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  file_string+="<td class=\"color_cat7 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&ge;20\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat6 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">20-10\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat5 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">10-2\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat4 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">2-1\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat3 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">1.0-0.1\%&nbsp;&nbsp;</td>";
+  file_string+="<td class=\"color_cat2 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">0.10-0.01\%&nbsp;&nbsp;</td> ";
+  file_string+="<td class=\"color_cat1 mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">&lt;0.01\%</td></tr></table></p>\n";
 
-file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
+  /*file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\"><font align=center size=\"4\"><b>Mutation Probability:&nbsp;</b></font></td>";
   for(int i=6;i>-1;i--)
     {
       if(i==6)
@@ -1810,7 +1821,7 @@ file_string+="<p><table class=\"results\" align=center><tr><td class=\"noborder\
       else
 	file_string+="<td class=\"color_cat"+to_string(i+1)+" mut\"><div class=\"mm\">&nbsp;&nbsp;&nbsp;&nbsp;</div></td><td class=\"noborder\">"+formatDouble(color_ladder[i]*100)+"-"+formatDouble(color_ladder[i-1]*100)+"\%&nbsp;&nbsp;</td> ";
     }
-  file_string+="</tr></table></p>\n";
+  file_string+="</tr></table></p>\n";*/
 
   
   file_string+="<body>\n</html>\n"; 

@@ -18,7 +18,9 @@ else #links for linux
 	libs=/usr/lib/x86_64-linux-gnu/libboost_serialization.a
 endif
 
-
+all: ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o #linking of ARMADiLLO
+	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o ${libs}
+	
 ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o #linking of ARMADiLLO
 	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o ${libs}
 

@@ -109,15 +109,18 @@ td.highlightcanonicalbestmatchrow {
 }
 td.highlighthotspot {
     background-color: #ff4d4d;
+    color:white;
 }
 td.highlightcoldspot {
     background-color: #668cff;
+    color:white;
 }
 td.highlightaamutation {
     background-color: #ffff00;
 }
 td.highlightaalowprob {
     background-color: #d24dff;
+    color:white;
 }
 td.seq_name
 {
