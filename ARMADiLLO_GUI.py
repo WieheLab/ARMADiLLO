@@ -95,8 +95,14 @@ class GuiHandler:
 
     def on_SingleFile_file_set(self,widget):
         self.singleFile=widget.get_filename()
+        if self.fileLabel.get_label()=="N/A":
+            outfile=os.path.splitext(self.singleFile)[0]+".txt"
+            self.fileLabel.set_label(os.path.basename(outfile))
     def on_SeqFile_file_set(self,widget):
         self.seqFile=widget.get_filename()
+        if self.fileLabel.get_label()=="N/A":
+            outfile=os.path.splitext(self.seqFile)[0]+".txt"
+            self.fileLabel.set_label(os.path.basename(outfile))
     def on_UCAFile_file_set(self,widget):
         self.ucaFile=widget.get_filename()
 
@@ -112,9 +118,10 @@ class GuiHandler:
     def on_ClearFiles_clicked(self,widget):
         for filechooser in self.file_selectors:
             filechooser.unselect_all()
+        self.fileLabel.set_label("N/A")
 
-    def on_savefile_clicked(self,button):
-        dialog=Gtk.FileChooserDialog("File to save data to...",self.window,Gtk.FileChooserAction.SAVE,(Gtk.STOCK_CANCEL,Gtk.ResponseType.CANCEL,Gtk.STOCK_OPEN,Gtk.ResponseType.OK))
+    def on_savefile_clicked(self,widget):
+        dialog=Gtk.FileChooserDialog(title="File to save data to...",parent=self.window,action=Gtk.FileChooserAction.SAVE,buttons=(Gtk.STOCK_CANCEL,Gtk.ResponseType.CANCEL,Gtk.STOCK_OPEN,Gtk.ResponseType.OK))
         cansave=False
         response=dialog.run()
         if response == Gtk.ResponseType.OK:
