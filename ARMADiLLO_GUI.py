@@ -10,7 +10,7 @@ import argparse
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk,Gdk
 
 class GuiHandler:
     def __init__(self):
@@ -36,6 +36,22 @@ class GuiHandler:
         
         self.fileLabel=builder.get_object("CountFile")
         self.fileLabel.set_label("N/A")
+
+        css=b'''
+        button {
+        background:white;
+        border-radius: 20px;
+        }
+        '''
+
+        style_provider=Gtk.CssProvider()
+        style_provider.load_from_data(css)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            style_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+            )
+
         
         self.window.show_all()
 
