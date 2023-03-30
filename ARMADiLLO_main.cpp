@@ -798,8 +798,14 @@ void print_HTML_freq_table_to_file(string filename,  map<int, map<char,double> >
 		  ostringstream ss;
 		  if(aa_sequence[j]=='X')
 		    file_string+= "<td height=\"20\" align=\"center\" sdval=\"3\" class=\"color_cat8\"><div class=\"tooltip\">"+aa_str;
+		  else if (aa_sequence[j]==amino_acids[i])
+		    {
+		      file_string+= "<td height=\"20\" align=\"center\" sdval=\"3\" class=\"color_cat"+to_string(k+1)+"\"><div class=\"tooltip\">"+aa_str;
+		    }
 		  else
-		    file_string+= "<td height=\"20\" align=\"center\" sdval=\"3\" class=\"color_cat"+to_string(k+1)+"\"><div class=\"tooltip\">"+aa_str;
+		    {
+		      file_string+= "<td height=\"20\" align=\"center\" sdval=\"3\" class=\"color_cat"+to_string(k+1)+" mut\"><div class=\"tooltip\">"+aa_str;
+		    }
 		  break;
 		}
 	    }
