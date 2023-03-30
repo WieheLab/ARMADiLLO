@@ -10,8 +10,8 @@ ifneq (,$(findstring dhvi,$(shell uname -n)))#links and libs for duke cluster
 	#libs=/datacommons/dhvi/scripts/lib/boost/boost_1_70_system/lib/libboost_serialization.a
 else ifneq (,$(findstring Darwin,$(shell uname -s)))#links and libs for osx
 	#links=-I/opt/local/include/  #-L/opt/local/include/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
-	links=-I/usr/local/lib
-	libs=/usr/local/lib/libboost_serialization-mt.a
+	links=-I/opt/homebrew/Cellar/boost/1.81.0_1/include/
+	libs=/opt/homebrew/Cellar/boost/1.81.0_1/lib/libboost_serialization-mt.a
 	#libs=/opt/local/lib/libboost_serialization-mt.dylib
 else #links for linux
 	links=-L/usr/lib/x86_64-linux-gnu/ -lboost_filesystem -lboost_system -lboost_serialization -pthread
@@ -20,7 +20,7 @@ endif
 
 all: ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o #linking of ARMADiLLO
 	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o ${libs}
-	
+
 ARMADiLLO: ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o #linking of ARMADiLLO
 	${cxx} ${flags} ${links} -o ARMADiLLO ARMADiLLO_main.o HTML.o utilities.o readInputFiles.o ${libs}
 
