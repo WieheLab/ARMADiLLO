@@ -1,5 +1,3 @@
-This is changing the file
-
 ![Alt text](logos/logoD.png?raw=true "ARMADiLLO log")
 
 ARMADiLLO code base
