@@ -41,6 +41,7 @@ public:
   vector<Seq> aa_out;
 
   bool rank=false;
+  bool StopCodon=true;
   
   ~NabEntry() {};
   NabEntry(vector<string>  Entry, Arguments arg)//constructor with number of mutations
@@ -58,7 +59,7 @@ public:
     ignoreJ=arg.ignoreJ;
     ignoreV=arg.ignoreV;
     outputMode=arg.outputMode;
-
+    StopCodon=arg.stopcodon;
 	
     if(UCA_sequence.length()!=sequence.length())
       {
@@ -110,6 +111,14 @@ public:
     //	cout << "outdir not empty";
     //  }
 
+    if (arg.percent>0)
+      {
+	cout << "percent"<<endl;
+	cout << rint(UCA_sequence.length()*arg.percent) <<endl;
+	arg.numbMutations=rint(UCA_sequence.length()*arg.percent);
+	mut_count=arg.numbMutations;
+      }
+    
     if(arg.numbMutations<0)
       {
 	output_filename=sequence_name+".ARMADiLLO.html";
@@ -122,6 +131,7 @@ public:
       }
     else
       {
+	
 	setMutcount=true;
 	output_filename=sequence_name+".N"+to_string(arg.numbMutations)+".ARMADiLLO.html";
 	tiles_output_filename=sequence_name+".N"+to_string(arg.numbMutations)+".tiles.html";
@@ -529,7 +539,7 @@ public:
   
   bool SimulateSequences(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int max_iter, int branches, bool lineage)
   {
-    if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence))
+    if (dna_sequence_has_stop_codon_in_reading_frame(UCA_sequence) && StopCodon)
       {
     	log_cerr+= "germline has stop codon...skipping this sequence\n"; 
     	log_cout+= sequence_name + "\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A\tN/A - UCA has stop codon\n"; 

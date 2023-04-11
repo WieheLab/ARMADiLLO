@@ -70,10 +70,14 @@ void helpMenu()
   cout << "\t -freq_dir [V, J Frequency file directory] : directory to pull the frequency tables for quick analysis\n";
   cout << "\t -amofile [amo file] : sets the amo file to use for the quick analysis\n";
   cout << "\t -resetamo   : flag to reset the amo file associated\n";
-  cout <<"\t -w [line wrap length (60)]\n\t -max_iter [cycles of B cell maturation(1000)]\n\t -c [cutoff for highlighting low prob (1=1%)]\n\t -replace_J_upto [number of replacements in J allowed]\n\t -chain [chain type (heavy=default|kappa|lambda)]\n\t -species [(human=default|rhesus)]\n\t -(l)ineage [number of trees] : argument to generate the mutations through a lineage generation instead of linear generation\n\t -(n)umber [number of mutations] : arguemnt to set number of mutations to generate instead of taking from mutant sequence\n\t -clean_first : flag to turn on cleaning the SMUA prior to running\n\t -output_seqs : flag to turn on printing out simulated seq]\n";
+  cout <<"\t -w [line wrap length (60)]\n\t -max_iter [cycles of B cell maturation(1000)]\n\t -c [cutoff for highlighting low prob (1=1%)]\n\t -replace_J_upto [number of replacements in J allowed]\n\t -chain [chain type (heavy=default|kappa|lambda)]\n\t -species [(human=default|rhesus)]\n\t -(l)ineage [number of trees] : argument to generate the mutations through a lineage generation instead of linear generation\n";
+  cout <<"\t -p [percent mutation] : argument to set percent of mutations to generate instead of taking from mutant sequence\n";
+  cout <<"\t -(n)umber [number of mutations] : argument to set number of mutations to generate instead of taking from mutant sequence\n";
+  cout <<"\t -clean_first : flag to turn on cleaning the SMUA prior to running\n\t -output_seqs : flag to turn on printing out simulated seq]\n";
   cout <<"\t -ignore_CDR3 : flag to ignore CDR3, default is false\n";
   cout <<"\t -ignore_V    : flag to ignore V, default is false\n";
-  cout <<"\t -ignore_J    : lag to ignore J, default is false\n";
+  cout <<"\t -ignore_J    : flag to ignore J, default is false\n";
+  cout <<"\t -igoreStopCodon : set flag to ignore stop codons during generation\n";
   cout << "\t -threads [number] : sets the number of threads to use during processing - default is number of processors\n";
   cout <<"\t -random_seed [provide a random seed]\n";
   exit(1);
@@ -187,6 +191,10 @@ int main(int argc, char *argv[])
 	{
 	  arguments.numbMutations=atoi(next_arg.c_str());
 	}
+      if (arg == "-p")
+	{
+	  arguments.percent=atof(next_arg.c_str());
+	}
       if (arg == "-dir" or arg=="-d")
 	{
 	  arguments.outDirectory=next_arg.c_str();
@@ -295,6 +303,10 @@ int main(int argc, char *argv[])
 	{
 	  arguments.ignore_warnings=true;
 	}
+      if (arg=="-igoreStopCodon")
+	{
+	  arguments.stopcodon=false;
+	}
       if(arg == "-resetamo" or arg == "-reset_amo" or arg == "-reload_amo")
 	{
 	  cout << "reseting AMO file\n";
@@ -359,6 +371,8 @@ int main(int argc, char *argv[])
      writeAMA();
    if(!fexists("sequence_color.css") && (arguments.outputMode=="HTML" || arguments.outputMode=="all"))
      writeColor();
+   if(!fexists("freq_sequence_color.css") && (arguments.outputMode=="HTML" || arguments.outputMode=="all"))
+     writeFreqColor();
    
    ///read input sequence alignment
    map <string, string> sequences;
@@ -759,7 +773,7 @@ void print_HTML_freq_table_to_file(string filename,  map<int, map<char,double> >
   file_string+="<head>\n"; 
   file_string+=" <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />\n";
   file_string+=" <title>Antibody Mutation Analysis</title>\n"; 
-  file_string+=" <link rel='stylesheet' href='sequence_color.css' />\n";
+  file_string+=" <link rel='stylesheet' href='freq_sequence_color.css' />\n";
   //file_string+=" <link rel='stylesheet' href='AMA.css' />\n";
   file_string+="<style>\n";
   file_string+=".tooltip{\n position: relative;\ndisplay: inline-block;\n}";
