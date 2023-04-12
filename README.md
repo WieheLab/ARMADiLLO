@@ -65,6 +65,8 @@ usage: ARMADiLLO -SMUA \<SMUA file\> -m Mutability.csv -s Substitution.csv <opti
 
 -\(n\)umber \[number of mutations\]
 
+-p \[percent mutation\]
+
 -lineage/-l \[integer number of end branches for lineage generation\]
 
 -clean_first \[clean the SMUA prior to running\]
