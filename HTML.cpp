@@ -107,6 +107,19 @@ bool writeColor()
   return true;
 }
 
+bool writeFreqColor()
+{
+  ofstream colorFile("freq_sequence_color.css");
+    if(colorFile.is_open())
+    {
+      colorFile<< sequence_color_css;
+      colorFile.close();
+    }
+    else
+      return false;
+  return true;
+}
+
 bool writeError(string filename, string seqName)
 {
 

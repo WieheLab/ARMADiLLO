@@ -95,6 +95,7 @@ struct Arguments
   vector<double> color_ladder{0.0001, 0.001, 0.01, 0.02, 0.10, 0.20, 0.5, 1};
   vector<double> color_rank_ladder{0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1};
   int numbMutations=-1;
+  float percent=-1;
   double low_prob_cutoff=.02;
   bool clean_SMUA_first=false, remutate=false, output_seqs=false, ignore_warnings=false;
   bool lineage=false;
@@ -102,6 +103,7 @@ struct Arguments
   int line_wrap_length=60, max_iter=1000,replace_J_upto=0;
   bool annotateFlag=false;
   bool rank=false;
+  bool stopcodon=true;
   std::mt19937 gen;
   std::uniform_real_distribution<double> dis;
 };
