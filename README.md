@@ -7,6 +7,8 @@ To compile update Makefile for correct pathing and run make. This will compile A
 
 [ARMADiLLo website](https://armadillo.dhvi.duke.edu/)
 
+[![DOI](https://zenodo.org/badge/455586018.svg)](https://zenodo.org/badge/latestdoi/455586018)
+
 # Compiling
 ARMADiLLo requires the Boost library (https://www.boost.org/).
 A makefile has been included for compiling ARMADiLLO. If there are problems with compiling, try fixing the links and libs variables on line 13 & 14 to properly point to the required libraries.
@@ -85,3 +87,4 @@ usage: ARMADiLLO -SMUA \<SMUA file\> -m Mutability.csv -s Substitution.csv <opti
 
 *Wiehe K., Bradley T., Meyerhoff R.R., Hart C. Williams W.B., Easterhoff D., Faison W.J., Kepler T.B., Saunders K.O., Alam S.M., Bonsignori M. and Haynes B.F.* (2018) Functional Relevance of Improbable Antibody Mutations for HIV Broadly Neutralizing Antibody Development. *Cell Host & Microbe*. 23(6):759-765.
 [https://doi.org/10.1016/j.chom.2018.04.018]
+
