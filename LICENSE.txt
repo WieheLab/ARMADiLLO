@@ -7,3 +7,6 @@ To enter a custom license agreement without the the CC BY-NC-ND 4.0 license rest
 reference to “OTC File No. XXXX” in your email.
 
 Please note that this software is distributed AS IS, WITHOUT ANY WARRANTY; and without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ARMADiLLO is also Distributed under the Boost Software License, Version 1.0
+(See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
