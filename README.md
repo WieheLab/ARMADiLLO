@@ -90,3 +90,5 @@ usage: ARMADiLLO -SMUA \<SMUA file\> -m Mutability.csv -s Substitution.csv <opti
 *Wiehe K., Bradley T., Meyerhoff R.R., Hart C. Williams W.B., Easterhoff D., Faison W.J., Kepler T.B., Saunders K.O., Alam S.M., Bonsignori M. and Haynes B.F.* (2018) Functional Relevance of Improbable Antibody Mutations for HIV Broadly Neutralizing Antibody Development. *Cell Host & Microbe*. 23(6):759-765.
 [https://doi.org/10.1016/j.chom.2018.04.018]
 
+*Martin Beem JS, Venkatayogi S, Haynes BF, Wiehe K.* (2023) ARMADiLLO: a web server for analyzing antibody mutation probabilities. *Nucleic Acids Res*. 2023;gkad398. doi:10.1093/nar/gkad398. [https://academic.oup.com/nar/article/51/W1/W51/7187705]
+
