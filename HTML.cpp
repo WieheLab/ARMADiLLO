@@ -80,45 +80,6 @@ void Table::print(string &file_string)
   file_string+="</table>\n"; 
 }
 
-bool writeAMA()
-{
-
-  ofstream amaFile("AMA.css");
-  if(amaFile.is_open())
-    {
-      amaFile<< AMA_css;
-      amaFile.close();
-    }
-  else
-    return false;
-  return true;
-}
-
-bool writeColor()
-{
-  ofstream colorFile("sequence_color.css");
-    if(colorFile.is_open())
-    {
-      colorFile<< sequence_color_css;
-      colorFile.close();
-    }
-    else
-      return false;
-  return true;
-}
-
-bool writeFreqColor()
-{
-  ofstream colorFile("freq_sequence_color.css");
-    if(colorFile.is_open())
-    {
-      colorFile<< sequence_color_css;
-      colorFile.close();
-    }
-    else
-      return false;
-  return true;
-}
 
 bool writeError(string filename, string seqName)
 {

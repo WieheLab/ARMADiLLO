@@ -1,7 +1,3 @@
-// Distributed under the Boost Software License, Version 1.0.
-//    (See accompanying file LICENSE_1_0.txt or copy at
-//          https://www.boost.org/LICENSE_1_0.txt)
-
 #include <math.h>
 #include <cstdlib>
 #include <random>
@@ -18,6 +14,7 @@
 #include "HTML.hpp"
 #include "utilities.hpp"
 #include <algorithm>
+#include "license.hpp"
 #include <boost/filesystem/operations.hpp>
 //#include "boost/filesystem.hpp"
 #include <sys/types.h>
@@ -37,7 +34,7 @@ using namespace boost;
 using namespace boost::filesystem;
 
 //classes
-class S5F_mut
+/**class S5F_mut
 {
 public:
   string fivemer, group, subst_group;
@@ -54,7 +51,7 @@ public:
     score25=_score25;
     score75=_score75;
   } 
-};
+  };**/
 
 
 class Seq //nucleotide level sequence object (later could have each base point to a aa object)
@@ -104,7 +101,7 @@ struct Arguments
   bool clean_SMUA_first=false, remutate=false, output_seqs=false, ignore_warnings=false;
   bool lineage=false;
   int branches=1;
-  int line_wrap_length=60, max_iter=1000,replace_J_upto=0;
+  int line_wrap_length=60, max_iter=10000,replace_J_upto=0;
   bool annotateFlag=false;
   bool rank=false;
   bool stopcodon=true;
@@ -147,6 +144,7 @@ string convert_to_string(Type);
 string J_genes_list(string species,string IGname);
 
 void run_entry(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &, map<string,vector<string>> &,map<string,vector<Seq>> &);
+void run_Table(map<string,S5F_mut> &, map<string,string> &, vector<string> , map<string,map<int,map<char,double>>> &, Arguments &, int);
 //function to run the entry object to generate simulations
 void printTileStack(string filename, map<string,vector<Seq>> &seq_map, vector<string> sequence_names, int line_wrap_length, double low_prob_cutoff, vector<double> &color_ladder);
 void convert_2D_seq_vector_to_HTML_table(vector<vector<Seq> >&v2, vector<string> &names, HTML::Table &html_table, double &low_prob_cutoff, vector<double> &color_ladder, int &counter);

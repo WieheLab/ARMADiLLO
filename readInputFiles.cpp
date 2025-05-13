@@ -142,6 +142,7 @@ void read_PARTISyaml_file(string filename, vector<vector<string> > &UA_alignment
   string inputSeq=" ",naiveSeq=" ",glSeq=" ",qrSeq=" ";
   string sequence_name=" ",trimmed_sequence=" ",uca_sequence=" ";
   string vGene,dGene,jGene;
+  string tmp;
 
   for(int i=0;i<parts.size();i++)
     {
@@ -173,6 +174,14 @@ void read_PARTISyaml_file(string filename, vector<vector<string> > &UA_alignment
 	{
 	  jGene=cleanYAMLline(parts[i]);
 	}
+      else if(parts[i].find("codon_positions")!=std::string::npos)
+	{
+	  cout << parts[i]<<endl;
+	  tmp=cleanYAMLline(parts[i]);
+	  cout << tmp << endl;
+	  
+	      //    "codon_positions": {"j": 300, "v": 267},
+	}
       else if(parts[i].find("d_gene")!=std::string::npos)
 	{
 	  dGene=cleanYAMLline(parts[i]);
@@ -189,7 +198,7 @@ void read_PARTISyaml_file(string filename, vector<vector<string> > &UA_alignment
 
 	  cleanSeqs(trimmed_sequence,uca_sequence);
 	  
-	  string markup_sequence(trimmed_sequence.length(),'U');
+	  string markup_sequence(trimmed_sequence.length(),'U');//need a way to get markup sequence from yaml file
 	  
 	  temp.push_back(sequence_name);	      
 	  temp.push_back(trimmed_sequence);
@@ -389,4 +398,22 @@ void cleanSeqs(string &seq1, string &seq2)
 
   seq1=seq1tmp;
   seq2=seq2tmp;
+}
+
+vector<string> splitbyDelimiter(string &stringtoParse, const string& delimiter)
+{
+  //string s=SMUA_alignments_and_markup[i][4];
+  //string delimiter="|";
+  vector<std::string> tokens;
+  
+  size_t last = 0;
+  size_t next = 0;
+  while ((next = stringtoParse.find(delimiter, last)) != string::npos)
+    {
+      tokens.push_back(stringtoParse.substr(last, next-last));
+      last = next + 1;
+    }
+  tokens.push_back(stringtoParse.substr(last));
+    
+  return tokens;
 }

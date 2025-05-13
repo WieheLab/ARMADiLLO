@@ -2,6 +2,8 @@
 #define NabEntry_H
 
 #include <iostream>
+
+//#include <boost/algorithm/string/replace.hpp>
 //#include <boost/filesystem.hpp>
 
 using namespace std;
@@ -80,6 +82,10 @@ public:
 	  sequence=newSeq;
 	  }
       }
+    else if(sequence.substr(sequence.length()-1)=="-")//added in to fix last character if it is a dash and seqs are same length
+      {
+	sequence.replace(sequence.size()-1,1,UCA_sequence.substr(UCA_sequence.length()-1));
+      }
     
     for(int j=max(UCA_sequence.length(),sequence.length())-1;j>0;j--)
       {
@@ -113,8 +119,6 @@ public:
 
     if (arg.percent>0)
       {
-	cout << "percent"<<endl;
-	cout << rint(UCA_sequence.length()*arg.percent) <<endl;
 	arg.numbMutations=rint(UCA_sequence.length()*arg.percent);
 	mut_count=arg.numbMutations;
       }
@@ -131,7 +135,6 @@ public:
       }
     else
       {
-	
 	setMutcount=true;
 	output_filename=sequence_name+".N"+to_string(arg.numbMutations)+".ARMADiLLO.html";
 	tiles_output_filename=sequence_name+".N"+to_string(arg.numbMutations)+".tiles.html";
@@ -200,6 +203,52 @@ public:
     
     return sim_aa_freqs;
   }
+
+  map<int, map<char,double>> generateInputTable(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map,mt19937 &gen, uniform_real_distribution<double> &dis,int mutation_count)
+  {
+    int iter=200000;
+    //map<string,map<string, string>> J_genes_list=J_genes_list();
+    map<int, map<char,double> > sim_aa_freqs;
+    vector<string> sub_mature_mutant_sequences;
+    vector<bool> sub_shield_mutations;
+    string sub_sequence=UCA_sequence;
+    int start=0;
+
+    //boost::replace_all(sub_sequence,"-","");
+
+    for(int i=0;i<sub_sequence.length();i++)
+      sub_shield_mutations.push_back(0);
+    
+    for(int j=1; j<=iter; j++)
+      {
+	vector<string> mutant_sequences;
+	string _aa_sequence;
+	simulate_S5F_mutation(sub_sequence, mutation_count, S5F_5mers, gen, dis,true, mutant_sequences, true, sub_shield_mutations);
+	DNA_mutant_sequences.push_back(mutant_sequences[mutant_sequences.size()-1]);
+	translate_dna_to_aa(mutant_sequences[mutant_sequences.size()-1], _aa_sequence, 1, dna_to_aa_map);
+	//	   mature_mutant_sequences[j-1]=aa_sequence2;
+	sub_mature_mutant_sequences.push_back(_aa_sequence);
+      }
+
+    for(int j=start; j<sub_mature_mutant_sequences[0].length(); j++)
+      {
+	for(int k=0; k<amino_acids.size(); k++)
+	  {
+	    sim_aa_freqs[j][amino_acids[k]]=0;
+	  }
+      }
+    for(int j=0; j<sub_mature_mutant_sequences.size(); j++)
+      {
+	//cout << ">mutant" << i+1 << "\n" << mature_mutant_sequences[i] << "\n";
+	for(int k=start; k<sub_mature_mutant_sequences[j].size(); k++)
+	  {
+	    sim_aa_freqs[k][sub_mature_mutant_sequences[j][k]]+=(1/((double)sub_mature_mutant_sequences.size()));
+	  }
+      }
+    
+    return sim_aa_freqs;
+  }
+  
   
   void getNumberMutations()
   {
@@ -360,7 +409,7 @@ public:
     markup_string=new_markup_string;
     
     ///output new SMUA per record
-    ofstream file_out;
+    std::ofstream file_out;
     string filename=sequence_name+".new_SMUA.fasta";
     file_out.open(filename.c_str());
     file_out << ">" << sequence_name << "\n" << sequence << "\n>" << UCA_sequence_name << "\n" << UCA_sequence << "\n>" << markup_header <<  "\n" << markup_string << "\n";
@@ -368,6 +417,8 @@ public:
 
     vector<bool> _shield_mutations(markup_string.length(), false);
     shield_mutations=_shield_mutations;
+    
+    return;
   }
 
   vector<string> printResults(map<string,S5F_mut> &S5F_5mers, map<string,string> &dna_to_aa_map, int line_wrap_length,double low_prob_cutoff,vector<double> &color_ladder)
@@ -378,6 +429,11 @@ public:
     vector<Seq> seq_vector, UCA_seq_vector, aa_seq_vector, aa_UCA_seq_vector;
     
     int CDR3_length=0;
+
+    for(int i=0; i<UCA_sequence.size(); i++)
+    {
+      if (UCA_sequence[i] != '-' && markup_mask[i]=="C") {CDR3_length++;}
+    }
     
     process_SMUA_sequence_to_seq_vector(sequence, markup_string, seq_vector, dna_to_aa_map, S5F_5mers);
     process_SMUA_sequence_to_seq_vector(UCA_sequence, markup_string, UCA_seq_vector, dna_to_aa_map, S5F_5mers);
@@ -441,11 +497,11 @@ public:
 		char snp[50];
 		//
 		if(rank)
-		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
+		  snprintf(snp,50,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
 		else
-		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
+		  snprintf(snp,50,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
 
-		//sprintf(snp,"%s%d%s:%0.6f:%0.5f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].rank,seq_vector[j].simulated_aa_positional_frequency);
+		//snprintf(snp,"%s%d%s:%0.6f:%0.5f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].rank,seq_vector[j].simulated_aa_positional_frequency);
 		string snpStr(snp);
 		seq_vector[j].isMut=true;
 		SNPs.push_back(snpStr.c_str());
@@ -491,11 +547,11 @@ public:
 		char snp[20];
 		//
 		if(rank)
-		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
+		  snprintf(snp,20,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].rank);
 		else
-		  sprintf(snp,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
+		  snprintf(snp,20,"%s%d%s:%0.6f",UCA_seq_vector[j].aa.c_str(),(j)/3+1,seq_vector[j].aa.c_str(),seq_vector[j].simulated_aa_positional_frequency);
 
-		//sprintf(snp,"%s%d%s:%0.6f:%0.5f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].rank,seq_vector[j].simulated_aa_positional_frequency);
+		//snprintf(snp,"%s%d%s:%0.6f:%0.5f",UCA_seq_vector[j].aa.c_str(),j,seq_vector[j].aa.c_str(),seq_vector[j].rank,seq_vector[j].simulated_aa_positional_frequency);
 		string snpStr(snp);
 		seq_vector[j].isMut=true;
 		SNPs.push_back(snpStr.c_str());
@@ -522,7 +578,7 @@ public:
 	  print_output_for_tiles_view(tiles_output_filename, all_aa_sequences, aa_sequence_names, line_wrap_length, low_prob_cutoff, color_ladder,rank);
 	if (outputMode=="fulltext" || outputMode=="all")
 	  {
-	    detailedTextPrintOut(sequence_name+".ARMADiLLO.Detailed.text",aa_sequence,UCA_aa_sequence,seq_vector,all_sequences);
+	    detailedTextPrintOut(sequence_name+".ARMADiLLO.Detailed.txt",aa_sequence,UCA_aa_sequence,seq_vector,all_sequences);
 	  }
 	
       }
@@ -589,7 +645,7 @@ public:
 	  }
       }
     //cerr << "STOP CODON #: " << stop_codon_count << "\n"; 
-    //cerr << "done\n";
+    //cerr << "one\n";
     ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
     ///init map to 0
     for(int j=0; j<mature_mutant_sequences[0].length(); j++)
@@ -644,112 +700,49 @@ public:
       }
   }
   
-  bool replaceTable(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input, Arguments &arg)
+  bool replaceTable(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input,Arguments &arg)
   {
     string UCA_aa_sequence="";
-    int V_mut_count=round(((mut_count-CDR3_mut_count)*Vgene_length/(sequence.length()-cdr_length)+Vgene_mut_count*3)/4);
-    int J_mut_count=round(((mut_count-CDR3_mut_count)*(Jgene_length)/(sequence.length()-cdr_length)+Jgene_mut_count*3)/4);
+
     translate_dna_to_aa(UCA_sequence, UCA_aa_sequence, 1, dna_to_aa_map);
-    string freq_table=Vgene+"_"+std::to_string(V_mut_count)+".freq_table.txt";
-    log_cerr+="Sequence name "+markup_header+'\n';
-    log_cerr+= "Chosen V frequency table "+freq_table+"\n";
+    replace_all(UCA_sequence_name,"|","_");
+    string freq_table=UCA_sequence_name+"_"+arg.chain_type+"_"+to_string(mut_count)+".freq_table.txt";
+    cout << freq_table<<endl;
     if (v_input.find(freq_table)==v_input.end())
       {
 	log_cout += freq_table+ " : not found in database, reverting to simulating sequence\n";
-	map<int, map<char,double>> freqTable_aa=generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,V_mut_count,"V");
+	map<int, map<char,double>> freqTable_aa=generateInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,mut_count);
 	v_input[freq_table]=freqTable_aa;
-      }
-    map<int, map<char,double>> positional_aa_freqs=v_input.find(freq_table)->second;
-    string shift=UCA_aa_sequence;
-    for (int i=0; i < UCA_aa_sequence.length(); i++)
-      {
-      if (UCA_sequence[3*i]=='-' || UCA_sequence[3*i+1]=='-' || UCA_sequence[3*i+2]=='-')
-	{
-	  shift[i]='1';
-	}
-      else
-	{
-	  shift[i]='0';
-	}
-      
-      if (sequence[3*i]=='-' || sequence[3*i+1]=='-' || sequence[3*i+2]=='-')
-	{
-	  shift[i]='0';
-	}
-      }
-    ///get positional frequency of aa from simulated sequences (with same num maturation mutations)
-    ///dealing with insertion and deletion
-    int cnt=0 ;
-    for(int j=0; j<Vgene_length/3; j++)
-      {
-	if (j>0 && shift[j-1]=='1' )
-	  {
-	    cnt+=1;
-	  }
-	for(int k=0; k<amino_acids.size(); k++)
-	  {
-	    mature_mutant_positional_aa_freqs[j][amino_acids[k]]=positional_aa_freqs[j-cnt][amino_acids[k]];
-	  }
-      }
-    for(int j=0; j<cdr_length/3; j++)
-      {
-	for(int k=0; k<amino_acids.size(); k++)
-	  {
-	    if (amino_acids[k]==UCA_aa_sequence[j+Vgene_length/3])
-	      {
-		mature_mutant_positional_aa_freqs[j+Vgene_length/3][amino_acids[k]]=1.0;
-	      }
-	    else
-	      {
-		mature_mutant_positional_aa_freqs[j+Vgene_length/3][amino_acids[k]]=0.0;
-	      }
-	  }
       }
 
-    freq_table=Jgene+"_"+std::to_string(J_mut_count)+".freq_table.txt";
-    log_cerr+= "Chosen J frequency table:" + freq_table+"\n";
-    if (v_input.find(freq_table)==v_input.end())
-      {
-	log_cout += freq_table+ " : not found in database, reverting to simulating sequence\n";
-	map<int, map<char,double>> freqTable_aa=generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,J_mut_count,"J");
-	v_input[freq_table]=freqTable_aa;
-      }
-    if (Jgene_mut_count==0)
-      {
-	for(int j=0; j<Jgene_length/3; j++)
-	  {
-	    for(int k=0; k<amino_acids.size(); k++)
-	      {
-		if (amino_acids[k]==UCA_aa_sequence[j+Vgene_length/3+cdr_length/3])
-		  {
-		    mature_mutant_positional_aa_freqs[j+Vgene_length/3+cdr_length/3][amino_acids[k]]=1.0;
-		  }
-		else
-		  {
-		    mature_mutant_positional_aa_freqs[j+Vgene_length/3+cdr_length/3][amino_acids[k]]=0.0;
-		  }
-	      }
-	  }
-      }
-    else
-      {
-	positional_aa_freqs=v_input.find(freq_table)->second;
-	int cnt=0 ;
-	for(int j=0; j<Jgene_length/3; j++)
-	  {
-	    if (j>0 && shift[j+Vgene_length/3+cdr_length/3]=='1' )
-	      {
-		cnt+=1;
-	      }
-	    for(int k=0; k<amino_acids.size(); k++)
-	      {
-		mature_mutant_positional_aa_freqs[j+Vgene_length/3+cdr_length/3][amino_acids[k]]=positional_aa_freqs[j-cnt][amino_acids[k]];
-	      }
-	  }
-      }
+    //map<int, map<char,double>> positional_aa_freqs=v_input.find(freq_table)->second;
+    mature_mutant_positional_aa_freqs=v_input.find(freq_table)->second;
+
     return true;
   }
 
+  bool replaceTable(map<string,S5F_mut> &S5F_5mers,map<string,string> &dna_to_aa_map, map<string,map<int, map<char,double> >>  &v_input,string freqTablename,int mut_count,Arguments &arg)
+  {
+    string UCA_aa_sequence="";
+    
+    translate_dna_to_aa(UCA_sequence, UCA_aa_sequence, 1, dna_to_aa_map);
+    string freq_table=freqTablename;//UCA_sequence_name+"_"+arg.chain_type+"_"+to_string(mut_count)+".freq_table.txt";
+    cout <<"v length        "<<Vgene_length<<endl;
+    cout <<"set freq table  "<< freq_table<<"\t"<<mut_count<<endl;
+    if (v_input.find(freq_table)==v_input.end())
+      {
+	cout << "generating table "<<freqTablename<<endl;
+	log_cout += freq_table+ " : not found in database, reverting to simulating sequence\n";
+	map<int, map<char,double>> freqTable_aa=generateVInputTable(S5F_5mers,dna_to_aa_map,arg.gen,arg.dis,mut_count,Vgene);
+	v_input[freq_table]=freqTable_aa;
+      }
+
+    //map<int, map<char,double>> positional_aa_freqs=v_input.find(freq_table)->second;
+    mature_mutant_positional_aa_freqs=v_input.find(freq_table)->second;
+    return true;
+  }
+
+  
   void countAAPairs(string aaMuts)
   {
     vector<string> aaMutsVector;
@@ -779,11 +772,15 @@ public:
     return;
   }
   
-  void outputSimSeqs(int max_iter, int branches)//function to write out the simulated sequences
+  void outputSimSeqs(int max_iter, int branches,map<string,S5F_mut> &S5F_5mers)//function to write out the simulated sequences
   {
-    ofstream file_out;
+    vector<bool> sub_shield_mutations;
+    for(int i=0;i<sequence.length();i++)
+      sub_shield_mutations.push_back(0);
+    
+    std::ofstream file_out;
     file_out.open(seqs_fasta_file.c_str());
-    ofstream fileDNA_out;
+    std::ofstream fileDNA_out;
     fileDNA_out.open(seqsDNA_fasta_file.c_str());
     //for loop to build branches
     for(int j=0; j<max_iter*branches; j++)
@@ -791,7 +788,19 @@ public:
 	file_out << ">seq_" << j+1 << "\n";
 	file_out << mature_mutant_sequences[j] << "\n";
 	fileDNA_out << ">seq_" << j+1 << "\n";
-	fileDNA_out << DNA_mutant_sequences[j] << "\n"; 
+	fileDNA_out << DNA_mutant_sequences[j] << "\n";
+
+	//vector<string> mutant_sequences;
+	vector<double> last_mut_scores;//(sequence.length(), 0.0);
+	vector<double> mut_scores;//(sequence.length(), 0.0);
+	double sum_mut_scores=0.0;
+	double last_sum_mut_scores=-1.0;
+	
+	get_mutability_scores(S5F_5mers, DNA_mutant_sequences[j],-2, false, shield_mutations, last_mut_scores, mut_scores, last_sum_mut_scores,sum_mut_scores);
+	for(int i=0;i<sequence.length();i++)
+	  fileDNA_out<<mut_scores[i]<<",";
+	fileDNA_out<<"\n";
+
       }
     file_out.close();
     fileDNA_out.close();
@@ -802,7 +811,7 @@ public:
   void simpleTextPrintOut(string filename,string &aa_sequence,string &UCA_aa_sequence,vector<Seq> &seq_vector)
   {
     //cout << "out ln654"<<endl;
-    ofstream file_out;
+    std::ofstream file_out;
     file_out.open(filename.c_str());
     file_out<<">"<<sequence_name<<endl;
     file_out<<UCA_aa_sequence<<endl;
@@ -842,7 +851,7 @@ return;
     vector<vector<vector<Seq> > > split_all_sequences;
     vector2D_to_3D(all_sequences,sequence.length(), split_all_sequences);
     
-    ofstream file_out;
+    std::ofstream file_out;
     file_out.open(filename.c_str());
     //file_out <<"\tUCA\t\t"<<sequence_name<<endl;
     file_out <<"sequence name:\t"<<sequence_name<<endl;
@@ -852,8 +861,8 @@ return;
     file_out <<"pos\tUCA AA\tUCA NT\tseq AA\tseq NT\t\tP(NT)\tP(AA)"<<endl;
     for(int j=0;j<sequence.length();j++)
       {
-	char c_str[10];
-	sprintf(c_str,"%.3f",split_all_sequences[0][1][j].S5F_mut_score);
+	char c_str[12];
+	snprintf(c_str,6,"%.3f",split_all_sequences[0][1][j].S5F_mut_score);
 	string mut_score_str(c_str);
 	if (split_all_sequences[0][1][j].S5F_mut_score == -1)
 	  {
@@ -865,7 +874,7 @@ return;
 	  symbol="*";
 	if(j%3==0)
 	  {
-	    sprintf(c_str,"%.3f",split_all_sequences[0][1][j].simulated_aa_positional_frequency);
+	    snprintf(c_str,6,"%.3f",split_all_sequences[0][1][j].simulated_aa_positional_frequency);
 	    file_out <<j<<"\t"<<UCA_aa_sequence[j/3]<<"\t"<<UCA_sequence[j]<<"\t"<<split_all_sequences[0][1][j].aa<<"\t"<<sequence[j]<<"\t"<<symbol<<"\t"<<mut_score_str<<"\t"<<c_str;
 	    if(split_all_sequences[0][1][j].simulated_aa_positional_frequency<0.02)
 	      file_out<<"<<";

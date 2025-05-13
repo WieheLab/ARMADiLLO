@@ -416,7 +416,9 @@ void pairwise_align_sequences_semiglobal_w_affine_gap(map<char, map<char, int> >
   
    ///semi global alignment starts with max of last row and last column, not corner cell
    double max_last_val=0;
-   int maxi,maxj;
+   //int maxi,maxj;
+   int maxi=sequence1_vctr.size()-1;//added code for making sure maxi and maxj are assigned
+   int maxj=sequence2_vctr.size()-1;//added code for making sure maxi and maxj are assigned
    for(int i=0; i<sequence1_vctr.size(); i++)
      {
        if (M[i][sequence2_vctr.size()-1]>max_last_val){max_last_val=M[i][sequence2_vctr.size()-1]; maxi=i;maxj=sequence2_vctr.size()-1;}
@@ -598,7 +600,10 @@ void number_of_mutations_two_seqs(string &s1, string &s2, int &mutation_count)
   for(int i=0; i<s1.size(); i++)
     {
       if ((s1[i] == '-') || (s2[i] == '-')){continue;} ///Not counting gaps as mutations currently
-      if (s1[i] != s2[i]) {mutation_count++;}
+      if (s1[i] != s2[i])
+	{
+	  mutation_count++;
+	}
     }
   return;
 }
@@ -663,7 +668,7 @@ string formatDouble(double value)
 {
   char buffer[50];
   
-  sprintf(buffer,"%2.2f",value);
+  snprintf(buffer,6,"%2.2f",value);//previous sprintf 
 
   string str(buffer);
   return str;

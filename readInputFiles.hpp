@@ -34,3 +34,4 @@ void cleanSeqs(string &,string &);
 void readIndividualFiles(string, string, vector<vector<string> > &);
 void readIndividualFiles(string, string, string, vector<vector<string> > &);
 
+vector<string> splitbyDelimiter(string &, const string&);
